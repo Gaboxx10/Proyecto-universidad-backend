@@ -17,5 +17,6 @@ export const defaultData = {
         telefono: "123456789",
         email: "empresa1@empresa.com",
         rif: "123456789",
+        rif_detalles: "J-123456789",
     }
 }

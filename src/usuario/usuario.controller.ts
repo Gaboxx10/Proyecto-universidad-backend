@@ -38,8 +38,8 @@ export class UsuarioController {
 
   @ApiOperation({ summary: 'Traer un usuario por su nombre o apellido' })
   @Get('/users/name/:name')
-  findUserByName(@Param('name') name: string) {
-    return this.usuarioService.findUserByName(name);
+  findUserByName(@Param('name') name: string, @Query("offset") offset: string) {
+    return this.usuarioService.findUserByName(name, offset);
   }
 
   @ApiOperation({ summary: 'Editar un usuario por su ID' })

@@ -14,6 +14,7 @@ export class UsuarioService {
   ) {}
 
   private entity = 'usuario';
+  private tipo_persona = 'USUARIO';
 
   async createUser(data: CreateUsuarioDto) {
     try {
@@ -26,45 +27,34 @@ export class UsuarioService {
       );
 
       const result = await this.prisma.$transaction(async (prisma) => {
-        const persona = await prisma.persona.create({
-          data: {
-            nombres: data.nombres,
-            apellidos: data.apellidos,
-            cedula_identidad: data.cedula_identidad,
-            cedula_id_detalles: 'V-' + data.cedula_identidad,
-            telefono: data.telefono,
-            email: data.email,
-            direccion: data.direccion,
-            tipo_persona: 'USUARIO',
-          },
-        });
-
-        const usuario = await prisma.usuario.create({
+        const user = await prisma.usuario.create({
           data: {
             user_name: data.user_name,
             contraseña: hashedPassword,
             rol: data.rol,
             datos: {
-              connect: {
-                id: persona.id,
+              create: {
+                tipo_persona: this.tipo_persona,
+                nombres: data.nombres,
+                apellidos: data.apellidos,
+                cedula_identidad: 'V-' + data.cedula_identidad,
+                telefono: data.telefono,
+                direccion: data.direccion,
+                email: data.email,
               },
             },
-          },
-        });
-        const usuarioWithData = await prisma.usuario.findUnique({
-          where: {
-            id: usuario.id,
           },
           include: {
             datos: true,
           },
         });
-
-        return {
-          usuarioWithData,
-        };
+        return user;
       });
-      return result;
+      return {
+        message: 'Usuario creado correctamente',
+        data: result,
+        statusCode: 201,
+      };
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -94,7 +84,11 @@ export class UsuarioService {
         throw new NotFoundException('No se encontraron usuarios');
       }
 
-      return users;
+      return {
+        message: 'Usuarios encontrados correctamente',
+        data: users,
+        statusCode: 200,
+      };
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -113,7 +107,11 @@ export class UsuarioService {
       if (!user) {
         throw new NotFoundException('Usuario no encontrado');
       }
-      return user;
+      return {
+        message: 'Usuario encontrado correctamente',
+        data: user,
+        statusCode: 200,
+      };
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -122,10 +120,14 @@ export class UsuarioService {
 
   async findUserByCI(ci: string) {
     try {
-      const user = await this.prisma.persona.findUnique({
-        where: { cedula_identidad: ci, tipo_persona: 'Usuario' },
+      const user = await this.prisma.usuario.findFirst({
+        where: {
+          datos: {
+            cedula_identidad: ci,
+          },
+        },
         include: {
-          usuario: true,
+          datos: true,
         },
       });
 
@@ -133,78 +135,73 @@ export class UsuarioService {
         return new NotFoundException('Usuario no encontrado');
       }
 
-      const userData = {
-        id: user.id,
-        nombres: user.nombres,
-        apellidos: user.apellidos,
-        cedula_identidad: user.cedula_identidad,
-        telefono: user.telefono,
-        email: user.email,
-        direccion: user.direccion,
-        user_name: user.usuario.user_name,
-        rol: user.usuario.rol,
+      return {
+        message: 'Usuario encontrado correctamente',
+        data: user,
+        statusCode: 200,
       };
-
-      return userData;
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
     }
   }
 
-  async findUserByName(name: string) {
+  async findUserByName(name: string, offset: string) {
+    const limit = 10;
+    const page = parseInt(offset, 10) || 1;
+    const skip = (page - 1) * limit;
+
     try {
-      const users = await this.prisma.persona.findMany({
+      const users = await this.prisma.usuario.findMany({
         where: {
-          AND: [
+          OR: [
             {
-              OR: [
-                {
-                  nombres: {
-                    contains: name,
+              datos: {
+                OR: [
+                  {
+                    nombres: {
+                      contains: name,
+                    },
                   },
-                },
-                {
-                  apellidos: {
-                    contains: name,
+                  {
+                    apellidos: {
+                      contains: name,
+                    },
                   },
-                },
-              ],
+                  {
+                    cedula_identidad: {
+                      contains: name,
+                    },
+                  },
+                ],
+              },
             },
             {
-              tipo_persona: 'USUARIO',
+              user_name: {
+                contains: name,
+              },
             },
           ],
         },
-        include: {
-          usuario: true,
+        orderBy: {
+          datos: {
+            nombres: 'asc',
+            apellidos: 'asc',
+          },
         },
+        skip,
+        take: limit,
       });
 
       if (!users || users.length === 0) {
-        const userByCI = await this.findUserByCI(name);
-        console.log('Usuario encontrado por CI:', userByCI);
-        if (userByCI) {
-          return userByCI;
-        }
-        return new NotFoundException('Usuario no encontrado');
+        throw new NotFoundException('No se encontraron usuarios');
       }
 
-      const userData = users.map((user) => ({
-        id: user.id,
-        user_name: user.usuario.user_name,
-        rol: user.usuario.rol,
-        datos: {
-          nombres: user.nombres,
-          apellidos: user.apellidos,
-          cedula_identidad: user.cedula_identidad,
-          telefono: user.telefono,
-          email: user.email,
-          direccion: user.direccion,
-        },
-      }));
-
-      return userData;
+      return {
+        message: 'Usuarios encontrados correctamente',
+        data: users,
+        statusCode: 200,
+      };
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -215,7 +212,7 @@ export class UsuarioService {
     //TODO: VALIDACIONES Y HACER CAMBIO DE CONTRASEÑA E EMAIL
     try {
       const result = await this.prisma.$transaction(async (prisma) => {
-        const user = await this.prisma.usuario.findUnique({
+        const user = await prisma.usuario.findUnique({
           where: {
             id,
           },
@@ -228,7 +225,7 @@ export class UsuarioService {
           return new NotFoundException('Usuario no encontrado');
         }
 
-        const updatedUser = await this.prisma.usuario.update({
+        const updatedUser = await prisma.usuario.update({
           where: {
             id,
           },
@@ -247,24 +244,23 @@ export class UsuarioService {
             },
           },
         });
-
-        const updatedUserWithData = await this.prisma.usuario.findUnique({
+        
+        const updateData = await prisma.usuario.findUnique({
           where: {
             id,
           },
           include: {
-            datos: {
-              select: {
-                id: true,
-              },
-            },
+            datos: true,
           },
         });
-        return updatedUserWithData;
+
+        return updateData
       });
+      
       return {
         message: 'Usuario actualizado exitosamente',
-        result,
+        data: result,
+        statusCode: 200,
       };
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
@@ -279,11 +275,7 @@ export class UsuarioService {
           id,
         },
         include: {
-          datos: {
-            select: {
-              id: true,
-            },
-          },
+          datos: true
         },
       });
 
@@ -304,7 +296,8 @@ export class UsuarioService {
       });
       return {
         message: 'Usuario eliminado exitosamente',
-        result,
+        data: user,
+        statusCode: 200,
       };
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);

@@ -12,23 +12,19 @@ export class OrdenesTrabajoController {
     return this.ordenesTrabajoService.createOrden(createOrdenesTrabajoDto);
   }
 
-  @Get("/all-ordenes")
+  @Get("/ordenes")
   findAllOrdenes(@Query() offset: string) {
     return this.ordenesTrabajoService.findAllOrdenes(offset);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.ordenesTrabajoService.findOne(+id);
+  @Get('/ordenes/id/:id')
+  findOrdenById(@Param('id') id: string) {
+    return this.ordenesTrabajoService.findOrdenById(id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateOrdenesTrabajoDto: UpdateOrdenesTrabajoDto) {
-    //return this.ordenesTrabajoService.update(+id, updateOrdenesTrabajoDto);
-  }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.ordenesTrabajoService.remove(+id);
+  @Delete('/ordenes/id/:id/delete')
+  deleteOrden(@Param('id') id: string) {
+    return this.ordenesTrabajoService.deleteOrden(id);
   }
 }

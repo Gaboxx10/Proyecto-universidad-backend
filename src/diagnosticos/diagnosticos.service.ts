@@ -44,7 +44,7 @@ export class DiagnosticosService {
             num_diagnostico,
             vehiculo: {
               connect: {
-                id: vehicle.id,
+                id: vehicle.data.id,
               },
             },
             revisiones: {
@@ -58,6 +58,7 @@ export class DiagnosticosService {
           },
           include: {
             revisiones: true,
+            vehiculo: true,
           },
         });
         return diagnostico;
@@ -65,8 +66,10 @@ export class DiagnosticosService {
 
       return {
         message: 'Diagnostico creado correctamente',
-        result,
+        data: result,
+        statusCode: 201,
       };
+
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -93,7 +96,11 @@ export class DiagnosticosService {
       if (!diagnosticos || diagnosticos.length === 0) {
         throw new NotFoundException('No se encontraron diagnosticos');
       }
-      return diagnosticos;
+      return {
+        message: 'Diagnosticos encontrados',
+        data: diagnosticos,
+        statusCode: 200,
+      };
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -115,7 +122,12 @@ export class DiagnosticosService {
       if (!diagnostico) {
         throw new NotFoundException('Diagnostico no encontrado');
       }
-      return diagnostico;
+      return {
+        message: 'Diagnostico encontrado',
+        data: diagnostico,
+        statusCode: 200,
+      };
+
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -143,11 +155,18 @@ export class DiagnosticosService {
       const diagnosticos = await this.prisma.diagnostico.findMany({
         where: {
           vehiculo: {
-            id: vehicle.id,
+            id: vehicle.data.id,
           },
+        },
+        orderBy: {
+          num_diagnostico: 'desc',
         },
         skip,
         take: limit,
+        include: {
+          vehiculo: true,
+          revisiones: true,
+        }
       });
 
       if (!diagnosticos || diagnosticos.length === 0) {
@@ -155,9 +174,11 @@ export class DiagnosticosService {
       }
 
       return {
-        vehicle,
-        diagnosticos,
+        message: 'Diagnosticos encontrados',  
+        data: diagnosticos,
+        statusCode: 200,
       };
+
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -183,8 +204,10 @@ export class DiagnosticosService {
 
         return {
           message: 'Diagnostico eliminado correctamente',
-          result: deleteDiagnostic,
+          result: diagnostico,
+          statusCode: 200,
         };
+        
       });
       return result;
     } catch (error) {

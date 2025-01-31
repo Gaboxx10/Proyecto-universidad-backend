@@ -4,6 +4,7 @@ import { UpdatePresupuestoDto } from './dto/update-presupuesto.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { VehicleService } from '../vehicle/vehicle.service';
 import { Errors } from '../shared/errors.service';
+import { stat } from 'fs';
 
 @Injectable()
 export class PresupuestoService {
@@ -23,16 +24,14 @@ export class PresupuestoService {
         throw new NotFoundException('Vehículo no encontrado');
       }
 
-      // Calcular el total_pagar
       let total_pagar = 0;
 
-      // Mapear los detalles para calcular el importe de cada producto
       const detallesConImporte = detalles.map((item) => {
-        const importe = item.cantidad * item.precio_unitario; // Calcular el importe por producto
+        const importe = item.cantidad * item.precio_unitario; 
         total_pagar += importe; // Sumar el importe al total
         return {
           ...item,
-          importe, // Añadir el campo de importe a cada detalle
+          importe, 
         };
       });
 
@@ -56,10 +55,10 @@ export class PresupuestoService {
             num_presupuesto,
             f_emision: today,
             f_validez: today,
-            total_pagar, // Usamos el total calculado
+            total_pagar, 
             vehiculo: {
               connect: {
-                id: vehicle.id,
+                id: vehicle.data.id,
               },
             },
             detalles: {
@@ -82,8 +81,10 @@ export class PresupuestoService {
 
       return {
         message: 'Presupuesto creado exitosamente',
-        presupuesto: result,
+        data: result,
+        statusCode: 201,
       };
+
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -99,12 +100,20 @@ export class PresupuestoService {
       const presupuestos = this.prisma.presupuesto.findMany({
         skip,
         take: limit,
+        orderBy: {
+          num_presupuesto: 'desc',
+        },
         include: {
           vehiculo: true,
           detalles: true,
-        },
+        }
       });
-      return presupuestos;
+      return {
+        message: 'Presupuestos encontrados',
+        data: presupuestos,
+        status: 200,
+      };
+
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -112,18 +121,28 @@ export class PresupuestoService {
   }
 
   async findPresupuestoById(id: string) {
-    const presupuesto = await this.prisma.presupuesto.findUnique({
-      where: { id },
-      include: {
-        vehiculo: true,
-        detalles: true,
-      },
-    });
-
-    if (!presupuesto) {
-      throw new NotFoundException('Presupuesto no encontrado');
+    try {
+      const presupuesto = await this.prisma.presupuesto.findUnique({
+        where: { id },
+        include: {
+          vehiculo: true,
+          detalles: true,
+        },
+      });
+  
+      if (!presupuesto) {
+        throw new NotFoundException('Presupuesto no encontrado');
+      }
+      return {
+        message: 'Presupuesto encontrado',
+        data: presupuesto,
+        statusCode: 200,
+      };
+      
+    } catch (error) {
+      const errorData = this.errors.handleError(error, this.entity);
+      return new HttpException(errorData, errorData.status);
     }
-    return presupuesto;
   }
 
   async findPresupuestoByPlaca(offset: string, placa: string) {
@@ -132,19 +151,22 @@ export class PresupuestoService {
     const skip = (page - 1) * limit;
 
     try {
-      const presupuesto = await this.prisma.vehiculo.findMany({
+      const presupuesto = await this.prisma.presupuesto.findMany({
         where: {
-          placa: placa,
-        },
-        include: {
-          presupuestos: {
-            include: {
-              detalles: true,
-            },
+          vehiculo: {
+            placa: placa,
           },
+        },
+        orderBy: {
+          num_presupuesto: 'desc',
         },
         skip,
         take: limit,
+
+        include: {
+          vehiculo: true,
+          detalles: true,
+        },
       });
 
       if (presupuesto.length === 0) {

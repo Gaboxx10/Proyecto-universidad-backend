@@ -149,16 +149,20 @@ Table DetallesFactura {
 Table Proveedores {
   id String [pk]
   nombre String [not null]
-  telefono String [not null]
-  direccion String [not null]
+  telefono String [unique, not null]
+  direccion String
+  rif String [unique]
+  rif_detalles String
+  nota String
 }
 
 Table Empresa {
   id Int [pk, increment]
-  nombre String [not null, default: 'Auto Service']
+  nombre String [not null, default: '']
   direccion String [not null, default: '']
   telefono String [not null, default: '']
   rif String [not null, default: '']
+  rif_detalles String [not null, default: '']
   email String [not null, default: '']
 }
 

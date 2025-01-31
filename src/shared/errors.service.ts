@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { ValidationError } from 'class-validator';
-import { HttpException, NotFoundException } from '@nestjs/common';  // Importación de excepciones
+import { HttpException, NotFoundException } from '@nestjs/common'; // Importación de excepciones
 
 @Injectable()
 export class Errors {
@@ -19,20 +19,27 @@ export class Errors {
       return this.handleValidationErrors(error);
     }
 
-    return this.formatErrorResponse('No se pudo procesar la solicitud', 500, 'UNKNOWN_ERROR');
+    return this.formatErrorResponse(
+      'No se pudo procesar la solicitud',
+      500,
+      'UNKNOWN_ERROR',
+    );
   }
 
-  private handlePrismaError(error: PrismaClientKnownRequestError, entity: string) {
+  private handlePrismaError(
+    error: PrismaClientKnownRequestError,
+    entity: string,
+  ) {
     console.log(error);
 
     const { code, meta, message } = error;
     const field = meta?.target?.[0];
 
     const errorMap = {
-      'P2002': this.handleP2002Error,
-      'P2003': this.handleP2003Error,
-      'P2005': this.handleP2005Error,
-      'P2025': this.handleP2025Error,
+      P2002: this.handleP2002Error,
+      P2003: this.handleP2003Error,
+      P2005: this.handleP2005Error,
+      P2025: this.handleP2025Error,
     };
 
     const handler = errorMap[code] || this.handleUnknownPrismaError;
@@ -40,67 +47,147 @@ export class Errors {
     return handler.call(this, field, entity, message, code, error);
   }
 
-  private handleP2002Error(field: string, entity: string, _message: string, code: string, error: any) {
+  private handleP2002Error(
+    field: string,
+    entity: string,
+    _message: string,
+    code: string,
+    error: any,
+  ) {
     const errorMessage = this.customizeFieldError(field, entity);
     return this.formatErrorResponse(errorMessage, 409, code, field, error);
   }
 
-  private handleP2003Error(field: string, _entity: string, _message: string, code: string, error: any) {
+  private handleP2003Error(
+    field: string,
+    _entity: string,
+    _message: string,
+    code: string,
+    error: any,
+  ) {
     const errorMessage = `No se puede eliminar el registro porque está asociado a otro recurso: ${field}`;
     return this.formatErrorResponse(errorMessage, 400, code, field, error);
   }
 
-  private handleP2005Error(_field: string, _entity: string, message: string, code: string, error: any) {
+  private handleP2005Error(
+    _field: string,
+    _entity: string,
+    message: string,
+    code: string,
+    error: any,
+  ) {
     const errorMessage = message || 'Un campo requerido está vacío o es nulo';
     return this.formatErrorResponse(errorMessage, 400, code, null, error);
   }
 
-  private handleP2025Error(_field: string, _entity: string, message: string, code: string, error: any) {
+  private handleP2025Error(
+    _field: string,
+    _entity: string,
+    message: string,
+    code: string,
+    error: any,
+  ) {
     const errorMessage = message || 'No se encontró el registro solicitado';
     return this.formatErrorResponse(errorMessage, 404, code, null, error);
   }
 
-  private handleUnknownPrismaError(_field: string, _entity: string, message: string, code: string, error: any) {
+  private handleUnknownPrismaError(
+    _field: string,
+    _entity: string,
+    message: string,
+    code: string,
+    error: any,
+  ) {
     const errorMessage = message || 'Ocurrió un error desconocido';
     return this.formatErrorResponse(errorMessage, 500, code, null, error);
   }
 
   private handleValidationErrors(errors: ValidationError[]) {
-    const validationErrors = errors.map(err => `${err.property}: ${Object.values(err.constraints).join(', ')}`);
-    return this.formatErrorResponse(validationErrors.join('; '), 400, 'VALIDATION_ERROR');
+    const validationErrors = errors.map(
+      (err) => `${err.property}: ${Object.values(err.constraints).join(', ')}`,
+    );
+    return this.formatErrorResponse(
+      validationErrors.join('; '),
+      400,
+      'VALIDATION_ERROR',
+    );
   }
 
   private customizeFieldError(field: string, entity: string): string {
     const entityMessages = {
-      'cliente': this.customizeClientFieldError(field),
-      'vehiculo': this.customizeVehicleFieldError(field),
-      'diagnostico': `El diagnóstico con el campo '${field}' tiene un valor duplicado o conflictivo.`,
-      'presupuesto': `El presupuesto con el campo '${field}' tiene un valor duplicado o conflictivo.`,
-      'usuario': `El usuario con el campo '${field}' tiene un valor duplicado o conflictivo.`,
+      cliente: this.customizeClientFieldError(field),
+      vehiculo: this.customizeVehicleFieldError(field),
+      diagnostico: `El diagnóstico con el campo '${field}' tiene un valor duplicado o conflictivo.`,
+      presupuesto: `El presupuesto con el campo '${field}' tiene un valor duplicado o conflictivo.`,
+      usuario: `El usuario con el campo '${field}' tiene un valor duplicado o conflictivo.`,
       'orden-trabajo': `La orden de trabajo con el campo '${field}' tiene un valor duplicado o conflictivo.`,
+      proveedores: this.customizeProveedorFieldError(field), 
+      empresa: this.customizeEmpresaFieldError(field),
+
     };
 
-    return entityMessages[entity] || `El campo '${field}' tiene un valor duplicado o conflictivo.`;
+    return (
+      entityMessages[entity] ||
+      `El campo '${field}' tiene un valor duplicado o conflictivo.`
+    );
   }
 
   private customizeClientFieldError(field: string): string {
     const clientMessages = {
-      'email': 'El correo electrónico proporcionado ya está registrado. Por favor, utiliza otro.',
-      'cedula_identidad': 'La cédula de identidad ya está registrada. Por favor, revisa y prueba con otra.',
-      'telefono': 'El número de teléfono ya está en uso. Intenta con otro.',
-      'user_name': 'El nombre de usuario ya está en uso. Elige otro nombre.',
+      email:
+        'El correo electrónico proporcionado ya está registrado. Por favor, utiliza otro.',
+      cedula_identidad:
+        'La cédula de identidad ya está registrada. Por favor, revisa y prueba con otra.',
+      telefono: 'El número de teléfono ya está en uso. Intenta con otro.',
+      user_name: 'El nombre de usuario ya está en uso. Elige otro nombre.',
     };
 
-    return clientMessages[field] || `El campo '${field}' tiene un valor duplicado o conflictivo.`;
+    return (
+      clientMessages[field] ||
+      `El campo '${field}' tiene un valor duplicado o conflictivo.`
+    );
   }
 
   private customizeVehicleFieldError(field: string): string {
     const vehicleMessages = {
-      'placa': 'La placa del vehículo ya está registrada. Por favor, ingresa una placa diferente.',
+      placa:
+        'La placa del vehículo ya está registrada. Por favor, ingresa una placa diferente.',
     };
 
-    return vehicleMessages[field] || `El campo '${field}' tiene un valor duplicado o conflictivo.`;
+    return (
+      vehicleMessages[field] ||
+      `El campo '${field}' tiene un valor duplicado o conflictivo.`
+    );
   }
+
+  private customizeProveedorFieldError(field: string): string {
+    const proveedorMessages = {
+      rif: 'El RIF proporcionado ya está registrado. Por favor, utiliza otro.',
+      telefono:
+        'El número de teléfono del proveedor ya está en uso. Intenta con otro.',
+    };
+
+    return (
+      proveedorMessages[field] ||
+      `El campo '${field}' tiene un valor duplicado o conflictivo.`
+    );
+  }
+
+  private customizeEmpresaFieldError(field: string): string {
+    const empresaMessages = {
+      nombre: 'El nombre de la empresa ya está registrado. Por favor, elige otro.',
+      rif: 'El RIF de la empresa ya está registrado. Por favor, utiliza otro.',
+      email: 'El correo electrónico de la empresa ya está registrado. Por favor, usa otro.',
+      telefono: 'El número de teléfono de la empresa ya está en uso. Intenta con otro.',
+      direccion: 'La dirección de la empresa ya está registrada. Verifica y prueba con una dirección diferente.',
+    };
+  
+    return (
+      empresaMessages[field] ||
+      `El campo '${field}' tiene un valor duplicado o conflictivo en la empresa.`
+    );
+  }
+  
 
   private formatErrorResponse(
     message: string,
@@ -108,33 +195,33 @@ export class Errors {
     code: string,
     field?: string,
     error?: any,
-) {
+  ) {
     const errorResponse: any = {
-        message: message,
-        status: statusCode,
-        code: code,
-        field: field,
+      message: message,
+      status: statusCode,
+      code: code,
+      field: field,
     };
 
     // Solo incluir detalles si hay información adicional en el error
     if (error) {
-        errorResponse.details = {
-            model: error.meta?.modelName,
-            target: error.meta?.target,
-            description: error.message,
-            clientVersion: error.clientVersion,
-        };
+      errorResponse.details = {
+        model: error.meta?.modelName,
+        target: error.meta?.target,
+        description: error.message,
+        clientVersion: error.clientVersion,
+      };
     }
 
     // Añadir `cause` solo si es un error relacionado con una causa específica (p. ej., un error 404)
     if (statusCode === 404 && error?.message === 'Vehiculo no encontrado') {
-        errorResponse.cause = {
-            message: error.message,
-            status: 404,
-            code: 'NOT_FOUND',
-        };
+      errorResponse.cause = {
+        message: error.message,
+        status: 404,
+        code: 'NOT_FOUND',
+      };
     }
 
     return errorResponse;
-}
+  }
 }

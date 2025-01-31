@@ -47,7 +47,7 @@ export class VehicleService {
             estado,
             cliente: {
               connect: {
-                id: client.id,
+                id: client.data.id,
               },
             },
           },
@@ -62,7 +62,9 @@ export class VehicleService {
       return {
         message: 'Vehiculo creado exitosamente',
         data: result,
+        statusCode: 201,
       };
+
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -78,8 +80,15 @@ export class VehicleService {
       const vehicles = await this.prisma.vehiculo.findMany({
         skip,
         take: limit,
+        orderBy: {
+          created_at: 'desc',
+        },
       });
-      return vehicles;
+      return {
+        message: 'Vehiculos encontrados exitosamente',
+        data: vehicles,
+        statusCode: 200,
+      }
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -91,7 +100,11 @@ export class VehicleService {
       const vehicle = await this.prisma.vehiculo.findUnique({
         where: { id },
         include: {
-          cliente: true,
+          cliente: {
+            include: {
+              datos: true,
+            },
+          },
         },
       });
 
@@ -99,7 +112,12 @@ export class VehicleService {
         throw new NotFoundException('Vehiculo no encontrado');
       }
 
-      return vehicle;
+      return {
+       message: 'Vehiculo encontrado exitosamente',
+        data: vehicle,
+        statusCode: 200,
+      }
+
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -122,7 +140,12 @@ export class VehicleService {
         throw new NotFoundException('Vehiculo no encontrado');
       }
 
-      return vehicle;
+      return {
+        message: 'Vehiculo encontrado exitosamente',
+        data: vehicle,
+        statusCode: 200,
+      }
+
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -137,13 +160,21 @@ export class VehicleService {
             contains: marca,
           },
         },
+        orderBy: {
+          created_at: 'desc',
+        },
       });
 
       if (vehicles.length === 0) {
         throw new NotFoundException('Vehiculos no encontrados');
       }
 
-      return vehicles;
+      return {
+        message: 'Vehiculos encontrados exitosamente',
+        data: vehicles,
+        statusCode: 200,
+      }
+
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -169,32 +200,34 @@ export class VehicleService {
                 contains: search,
               },
             },
+            {
+              cliente: {
+                datos: {
+                  cedula_identidad: {
+                    contains: search,
+                  },
+                },
+              },
+            },
           ],
+        },
+        orderBy: {
+          created_at: 'desc',
         },
         skip,
         take: limit,
       });
 
       if (vehicles.length === 0) {
-        const vehiclesByCI = await this.prisma.vehiculo.findMany({
-          where: {
-            cliente: {
-              datos: {
-                cedula_identidad: search,
-              },
-            },
-          },
-          skip,
-          take: limit,
-        });
-
-        if (vehiclesByCI.length === 0) {
-          throw new NotFoundException('Vehiculos no encontrados');
-        }
-        return vehiclesByCI;
+        throw new NotFoundException('Vehiculos no encontrados');
       }
 
-      return vehicles;
+      return {
+        message: 'Vehiculos encontrados exitosamente',
+        data: vehicles,
+        statusCode: 200,
+      }
+
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -214,8 +247,21 @@ export class VehicleService {
       cedula_cliente,
     } = updateVehicleDto;
 
-     if(!placa && !marca && !modelo && !color && !tipo && !año && !kilometraje && !estado && !cedula_cliente) {
-      throw new HttpException('Debe proporcionar al menos un campo para actualizar', 400);
+    if (
+      !placa &&
+      !marca &&
+      !modelo &&
+      !color &&
+      !tipo &&
+      !año &&
+      !kilometraje &&
+      !estado &&
+      !cedula_cliente
+    ) {
+      throw new HttpException(
+        'Debe proporcionar al menos un campo para actualizar',
+        400,
+      );
     }
 
     const vehicle = await this.prisma.vehiculo.findUnique({
@@ -228,7 +274,6 @@ export class VehicleService {
 
     try {
       const result = await this.prisma.$transaction(async (prisma) => {
-
         let persona: any;
         if (cedula_cliente) {
           persona = await prisma.persona.findUnique({
@@ -245,8 +290,6 @@ export class VehicleService {
             throw new NotFoundException('Cliente no encontrado');
           }
 
-          console.log('Cliente encontrado:', persona);
-
           const updateVehicle = await prisma.vehiculo.update({
             where: { id },
             data: {
@@ -262,18 +305,17 @@ export class VehicleService {
                 connect: {
                   id: persona.cliente.id,
                 },
-              }
+              },
             },
             include: {
               cliente: {
                 include: {
                   datos: true,
-                }
-              }
-            }
+                },
+              },
+            },
           });
           return updateVehicle;
-
         } else {
           const updateVehicle = await prisma.vehiculo.update({
             where: { id },
@@ -285,23 +327,25 @@ export class VehicleService {
               tipo,
               año,
               kilometraje,
-              estado
+              estado,
             },
             include: {
               cliente: {
                 include: {
                   datos: true,
-                }
-              }
-            }
+                },
+              },
+            },
           });
           return updateVehicle;
         }
       });
       return {
         message: 'Vehiculo actualizado correctamente',
-        result,
+        data: result,
+        statusCode: 200,
       };
+
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -328,8 +372,10 @@ export class VehicleService {
 
       return {
         message: 'Vehiculo eliminado correctamente',
-        result,
+        data: result,
+        statusCode: 200,
       };
+
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);

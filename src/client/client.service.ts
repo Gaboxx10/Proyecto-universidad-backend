@@ -21,6 +21,7 @@ export class ClientService {
   ) {}
 
   private entity = 'cliente';
+  private tipo_persona = "CLIENTE";
 
   async createClient(createClientDto: CreateClientDto) {
     const {
@@ -45,42 +46,33 @@ export class ClientService {
 
     try {
       const result = await this.prisma.$transaction(async (prisma) => {
-        const persona = await prisma.persona.create({
-          data: {
-            tipo_persona: CLIENTE,
-            nombres,
-            apellidos,
-            cedula_identidad,
-            cedula_id_detalles: cdiOrRIF,
-            telefono,
-            direccion,
-            email,
-          },
-        });
-
         const client = await prisma.cliente.create({
           data: {
             tipo_cliente: tipoCliente,
             datos: {
-              connect: {
-                id: persona.id,
+              create: {
+                tipo_persona: this.tipo_persona,
+                nombres,
+                apellidos,
+                cedula_identidad: cdiOrRIF,
+                cedula_id_detalles: cdiOrRIF,
+                telefono,
+                direccion,
+                email,
               },
             },
-          },
-        });
-
-        const clientData = await prisma.cliente.findUnique({
-          where: {
-            id: client.id,
           },
           include: {
             datos: true,
           },
         });
-
-        return clientData;
-      });
-      return result;
+        return client;
+      })
+      return {
+        message: 'Cliente creado exitosamente',
+        data: result,
+        statusCode: 201
+      };
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -105,7 +97,12 @@ export class ClientService {
         throw new HttpException('No se encontraron clientes', 404);
       }
 
-      return clients;
+      return {
+        message: 'Clientes encontrados exitosamente',
+        data: clients,
+        statusCode: 200,
+      };
+
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -124,7 +121,12 @@ export class ClientService {
       if (!client) {
         throw new NotFoundException('Usuario no encontrado');
       }
-      return client;
+      return {
+        message: 'Cliente encontrado exitosamente',
+        data: client,
+        statusCode: 200,
+      };
+
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -136,59 +138,47 @@ export class ClientService {
     const page = parseInt(offset, 10) || 1;
     const skip = (page - 1) * limit;
     try {
-      const clients = await this.prisma.persona.findMany({
+
+       const clients = await this.prisma.cliente.findMany({
         where: {
-          AND: [
-            {
-              OR: [
-                {
-                  nombres: {
-                    contains: name,
-                  },
+          datos: {
+            OR: [
+              {
+                nombres: {
+                  contains: name,
                 },
-                {
-                  apellidos: {
-                    contains: name,
-                  },
+                apellidos: {
+                  contains: name,
                 },
-              ],
-            },
-            {
-              tipo_persona: CLIENTE,
-            },
-          ],
-        },
-        include: {
-          cliente: true,
+                cedula_identidad: {
+                  contains: name,
+                }
+              },
+            ]
+          },
         },
         skip,
         take: limit,
+        include: {
+          datos: true,
+        },
+        orderBy: {
+          datos: {
+            nombres: 'asc',
+          },
+        }
       });
 
       if (!clients || clients.length === 0) {
-        const clientByCI = await this.findClientByCI(name);
-        if (clientByCI) {
-          return [clientByCI];
-        }
-        return new NotFoundException('Cliente no encontrado');
+        throw new HttpException('No se encontraron clientes', 404);
       }
 
-      const clientsData = clients.map((client) => ({
-        id: client.cliente.id,
-        tipo_cliente: client.cliente.tipo_cliente,
-        datos: {
-          id: client.id,
-          tipo_persona: client.tipo_persona,
-          nombres: client.nombres,
-          apellidos: client.apellidos,
-          cedula_identidad: client.cedula_identidad,
-          cedula_id_detalles: client.cedula_id_detalles,
-          telefono: client.telefono,
-          direccion: client.direccion,
-          email: client.email,
-        },
-      }));
-      return clientsData;
+      return {
+        message: 'Clientes encontrados exitosamente',
+        data: clients,
+        statusCode: 200,
+      };
+
     } catch (error) {
       console.log(error);
       const errorData = this.errors.handleError(error, this.entity);
@@ -198,34 +188,27 @@ export class ClientService {
 
   async findClientByCI(ci: string) {
     try {
-      const client = await this.prisma.persona.findUnique({
-        where: { cedula_identidad: ci, tipo_persona: CLIENTE },
+      const client = await this.prisma.cliente.findFirst({
+        where: {
+          datos: {
+            cedula_identidad: ci,
+          },
+        },
         include: {
-          cliente: true,
+          datos: true,
         },
       });
 
       if (!client) {
         return new NotFoundException('Usuario no encontrado');
       }
-
-      const clientData = {
-        id: client.cliente.id,
-        tipo_cliente: client.cliente.tipo_cliente,
-        datos: {
-          id: client.id,
-          tipo_persona: client.tipo_persona,
-          nombres: client.nombres,
-          apellidos: client.apellidos,
-          cedula_identidad: client.cedula_identidad,
-          cedula_id_detalles: client.cedula_id_detalles,
-          telefono: client.telefono,
-          direccion: client.direccion,
-          email: client.email,
-        },
+      
+      return {
+        message: 'Cliente encontrado exitosamente',
+        data: client,
+        statusCode: 200,
       };
-
-      return clientData;
+      
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -263,6 +246,8 @@ export class ClientService {
           throw new NotFoundException('Cliente no encontrado');
         }
 
+        //TODO: CEDULAA Y TIPO CLIENTE
+
         const updatedClient = await prisma.cliente.update({
           where: { id },
           data: {
@@ -277,22 +262,20 @@ export class ClientService {
               },
             },
           },
-        });
-
-        const clientData = await prisma.cliente.findUnique({
-          where: { id },
           include: {
             datos: true,
           },
         });
 
-        return clientData;
-      });
+        return updatedClient;
+        });
 
       return {
         message: 'Cliente actualizado exitosamente',
-        result,
+        data: result,
+        statusCode: 200,
       };
+
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -304,11 +287,7 @@ export class ClientService {
       const client = await this.prisma.cliente.findUnique({
         where: { id },
         include: {
-          datos: {
-            select: {
-              id: true,
-            },
-          },
+          datos: true
         },
       });
 
@@ -319,15 +298,16 @@ export class ClientService {
       const personaId = client.datos.id;
 
       const result = await this.prisma.$transaction(async (prisma) => {
-        const persona = await prisma.persona.delete({
+        const deleted = await prisma.persona.delete({
           where: { id: personaId },
         });
 
-        return persona;
+        return deleted;
       });
       return {
         message: 'Cliente eliminado exitosamente',
-        result,
+        data: client,
+        statusCode: 200,
       };
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);

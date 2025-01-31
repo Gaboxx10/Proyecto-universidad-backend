@@ -41,6 +41,7 @@ export class SeedService {
         telefono: defaultData.empresa.telefono,
         email: defaultData.empresa.email,
         rif: defaultData.empresa.rif,
+        rif_detalles: defaultData.empresa.rif_detalles
       },
     }); 
 

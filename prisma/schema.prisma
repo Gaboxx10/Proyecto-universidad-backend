@@ -177,25 +177,28 @@ model DetallesFactura {
 }
 
 model Proveedores {
-  id        String @id @default(uuid())
-  nombre    String
-  telefono  String
-  direccion String
+  id           String  @id @default(uuid())
+  nombre       String
+  telefono     String @unique
+  direccion    String?
+  rif          String? @unique
+  rif_detalles String?
+  nota         String?
 }
 
 model Empresa {
-  id        Int @id @default(autoincrement())
-  nombre    String @default("Auto Service")
-  direccion String @default("")
-  telefono  String @default("")
-  rif       String @default("")
-  email     String @default("")
+  id           Int    @id @default(autoincrement())
+  nombre       String @default("")
+  direccion    String @default("")
+  telefono     String @default("")
+  rif          String @default("")
+  rif_detalles String @default("")
+  email        String @default("")
 }
 
 model SeedStatus {
   id        Int      @id @default(autoincrement())
-  name      String   @unique 
-  executed  Boolean  @default(false) 
+  name      String   @unique
+  executed  Boolean  @default(false)
   createdAt DateTime @default(now())
 }
-
