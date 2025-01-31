@@ -1,0 +1,201 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator dbml {
+  provider = "prisma-dbml-generator"
+}
+
+model Persona {
+  id                 String  @id @default(uuid())
+  nombres            String
+  apellidos          String
+  cedula_identidad   String  @unique
+  cedula_id_detalles String? @unique
+  telefono           String  @unique
+  email              String? @unique
+  direccion          String?
+  tipo_persona       String
+
+  created_at DateTime @default(now())
+
+  usuario Usuario? @relation
+  cliente Cliente? @relation
+}
+
+model Usuario {
+  id            String  @id @default(uuid())
+  datosId       String  @unique
+  user_name     String  @unique
+  contraseña   String
+  rol           String
+  refresh_token String?
+
+  datos Persona @relation(fields: [datosId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model Cliente {
+  id      String @id @default(uuid())
+  datosId String @unique
+
+  datos        Persona @relation(fields: [datosId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  tipo_cliente String
+
+  vehiculos Vehiculo[]
+  facturas  Factura[]
+
+  created_at DateTime @default(now())
+}
+
+model Vehiculo {
+  id          String @id @default(uuid())
+  placa       String @unique
+  marca       String
+  tipo        String
+  modelo      String
+  color       String
+  año        Int
+  kilometraje Int
+
+  clienteId String
+  cliente   Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  diagnosticos   Diagnostico[]
+  presupuestos   Presupuesto[]
+  ordenesTrabajo OrdenTrabajo[]
+  factturas      Factura[]
+
+  estado     String   @default("Null")
+  created_at DateTime @default(now())
+}
+
+model Diagnostico {
+  id              String     @id @default(uuid())
+  num_diagnostico Int        @default(1)
+  revisiones      Revision[]
+
+  vehiculoId String
+  vehiculo   Vehiculo @relation(fields: [vehiculoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  created_at DateTime @default(now())
+}
+
+model Revision {
+  id          String @id @default(uuid())
+  observacion String
+  causa_prob  String
+  solucion    String
+  nota        String
+
+  diagnosticoId String
+
+  diagnostico Diagnostico @relation(fields: [diagnosticoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model Presupuesto {
+  id              String               @id @default(uuid())
+  num_presupuesto Int                  @default(1)
+  f_emision       DateTime             @default(now())
+  f_validez       DateTime
+  total_pagar     Float
+  detalles        DetallePresupuesto[]
+
+  vehiculoId String
+  vehiculo   Vehiculo @relation(fields: [vehiculoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  created_at DateTime @default(now())
+}
+
+model DetallePresupuesto {
+  id              String @id @default(uuid())
+  descripcion     String
+  nota            String
+  cantidad        Int
+  precio_unitario Float
+  importe         Float
+
+  presupuestoId String
+  presupuesto   Presupuesto @relation(fields: [presupuestoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model OrdenTrabajo {
+  id                 String    @id @default(uuid())
+  num_orden          Int       @default(1)
+  f_creacion         DateTime  @default(now())
+  f_entrega_estimada DateTime?
+  nota_adicional     String?
+
+  detalles DetalleOrdenTrabajo[]
+
+  vehiculoId String
+  vehiculo   Vehiculo @relation(fields: [vehiculoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  created_at DateTime @default(now())
+}
+
+model DetalleOrdenTrabajo {
+  id             String       @id @default(uuid())
+  observacion    String
+  solucion       String
+  descripcion    String
+  cantidad       Int?
+  ordenTrabajoId String
+  ordenTrabajo   OrdenTrabajo @relation(fields: [ordenTrabajoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model Factura {
+  id          String   @id @default(uuid())
+  num_factura Int      @default(1)
+  f_emision   DateTime @default(now())
+  subtotal    Float
+  iva         Float
+  total_pagar Float
+
+  clienteId String
+  cliente   Cliente           @relation(fields: [clienteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  detalles  DetallesFactura[]
+  pago      Boolean
+
+  created_at DateTime  @default(now())
+  Vehiculo   Vehiculo? @relation(fields: [vehiculoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  vehiculoId String?
+}
+
+model DetallesFactura {
+  id              String @id @default(uuid())
+  descripcion     String
+  cantidad        Int
+  precio_unitario Float
+  total           Float
+  facturaId       String
+
+  factura Factura @relation(fields: [facturaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model Proveedores {
+  id        String @id @default(uuid())
+  nombre    String
+  telefono  String
+  direccion String
+}
+
+model Empresa {
+  id        Int @id @default(autoincrement())
+  nombre    String @default("Auto Service")
+  direccion String @default("")
+  telefono  String @default("")
+  rif       String @default("")
+  email     String @default("")
+}
+
+model SeedStatus {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique 
+  executed  Boolean  @default(false) 
+  createdAt DateTime @default(now())
+}
+

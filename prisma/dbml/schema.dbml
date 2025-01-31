@@ -1,0 +1,194 @@
+//// ------------------------------------------------------
+//// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+//// ------------------------------------------------------
+
+Table Persona {
+  id String [pk]
+  nombres String [not null]
+  apellidos String [not null]
+  cedula_identidad String [unique, not null]
+  cedula_id_detalles String [unique]
+  telefono String [unique, not null]
+  email String [unique]
+  direccion String
+  tipo_persona String [not null]
+  created_at DateTime [default: `now()`, not null]
+  usuario Usuario
+  cliente Cliente
+}
+
+Table Usuario {
+  id String [pk]
+  datosId String [unique, not null]
+  user_name String [unique, not null]
+  contraseña String [not null]
+  rol String [not null]
+  refresh_token String
+  datos Persona [not null]
+}
+
+Table Cliente {
+  id String [pk]
+  datosId String [unique, not null]
+  datos Persona [not null]
+  tipo_cliente String [not null]
+  vehiculos Vehiculo [not null]
+  facturas Factura [not null]
+  created_at DateTime [default: `now()`, not null]
+}
+
+Table Vehiculo {
+  id String [pk]
+  placa String [unique, not null]
+  marca String [not null]
+  tipo String [not null]
+  modelo String [not null]
+  color String [not null]
+  año Int [not null]
+  kilometraje Int [not null]
+  clienteId String [not null]
+  cliente Cliente [not null]
+  diagnosticos Diagnostico [not null]
+  presupuestos Presupuesto [not null]
+  ordenesTrabajo OrdenTrabajo [not null]
+  factturas Factura [not null]
+  estado String [not null, default: 'Null']
+  created_at DateTime [default: `now()`, not null]
+}
+
+Table Diagnostico {
+  id String [pk]
+  num_diagnostico Int [not null, default: 1]
+  revisiones Revision [not null]
+  vehiculoId String [not null]
+  vehiculo Vehiculo [not null]
+  created_at DateTime [default: `now()`, not null]
+}
+
+Table Revision {
+  id String [pk]
+  observacion String [not null]
+  causa_prob String [not null]
+  solucion String [not null]
+  nota String [not null]
+  diagnosticoId String [not null]
+  diagnostico Diagnostico [not null]
+}
+
+Table Presupuesto {
+  id String [pk]
+  num_presupuesto Int [not null, default: 1]
+  f_emision DateTime [default: `now()`, not null]
+  f_validez DateTime [not null]
+  total_pagar Float [not null]
+  detalles DetallePresupuesto [not null]
+  vehiculoId String [not null]
+  vehiculo Vehiculo [not null]
+  created_at DateTime [default: `now()`, not null]
+}
+
+Table DetallePresupuesto {
+  id String [pk]
+  descripcion String [not null]
+  nota String [not null]
+  cantidad Int [not null]
+  precio_unitario Float [not null]
+  importe Float [not null]
+  presupuestoId String [not null]
+  presupuesto Presupuesto [not null]
+}
+
+Table OrdenTrabajo {
+  id String [pk]
+  num_orden Int [not null, default: 1]
+  f_creacion DateTime [default: `now()`, not null]
+  f_entrega_estimada DateTime
+  nota_adicional String
+  detalles DetalleOrdenTrabajo [not null]
+  vehiculoId String [not null]
+  vehiculo Vehiculo [not null]
+  created_at DateTime [default: `now()`, not null]
+}
+
+Table DetalleOrdenTrabajo {
+  id String [pk]
+  observacion String [not null]
+  solucion String [not null]
+  descripcion String [not null]
+  cantidad Int
+  ordenTrabajoId String [not null]
+  ordenTrabajo OrdenTrabajo [not null]
+}
+
+Table Factura {
+  id String [pk]
+  num_factura Int [not null, default: 1]
+  f_emision DateTime [default: `now()`, not null]
+  subtotal Float [not null]
+  iva Float [not null]
+  total_pagar Float [not null]
+  clienteId String [not null]
+  cliente Cliente [not null]
+  detalles DetallesFactura [not null]
+  pago Boolean [not null]
+  created_at DateTime [default: `now()`, not null]
+  Vehiculo Vehiculo
+  vehiculoId String
+}
+
+Table DetallesFactura {
+  id String [pk]
+  descripcion String [not null]
+  cantidad Int [not null]
+  precio_unitario Float [not null]
+  total Float [not null]
+  facturaId String [not null]
+  factura Factura [not null]
+}
+
+Table Proveedores {
+  id String [pk]
+  nombre String [not null]
+  telefono String [not null]
+  direccion String [not null]
+}
+
+Table Empresa {
+  id Int [pk, increment]
+  nombre String [not null, default: 'Auto Service']
+  direccion String [not null, default: '']
+  telefono String [not null, default: '']
+  rif String [not null, default: '']
+  email String [not null, default: '']
+}
+
+Table SeedStatus {
+  id Int [pk, increment]
+  name String [unique, not null]
+  executed Boolean [not null, default: false]
+  createdAt DateTime [default: `now()`, not null]
+}
+
+Ref: Usuario.datosId - Persona.id [delete: Cascade]
+
+Ref: Cliente.datosId - Persona.id [delete: Cascade]
+
+Ref: Vehiculo.clienteId > Cliente.id [delete: Cascade]
+
+Ref: Diagnostico.vehiculoId > Vehiculo.id [delete: Cascade]
+
+Ref: Revision.diagnosticoId > Diagnostico.id [delete: Cascade]
+
+Ref: Presupuesto.vehiculoId > Vehiculo.id [delete: Cascade]
+
+Ref: DetallePresupuesto.presupuestoId > Presupuesto.id [delete: Cascade]
+
+Ref: OrdenTrabajo.vehiculoId > Vehiculo.id [delete: Cascade]
+
+Ref: DetalleOrdenTrabajo.ordenTrabajoId > OrdenTrabajo.id [delete: Cascade]
+
+Ref: Factura.clienteId > Cliente.id [delete: Cascade]
+
+Ref: Factura.vehiculoId > Vehiculo.id [delete: Cascade]
+
+Ref: DetallesFactura.facturaId > Factura.id [delete: Cascade]
