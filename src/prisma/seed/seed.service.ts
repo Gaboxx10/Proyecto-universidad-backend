@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { defaultData } from './default.data';
+import { BcryptService } from 'src/shared/bcrypt.service';
 
 @Injectable()
 export class SeedService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly bcryptService: BcryptService) {}
 
   async seed() {
     const seedStatus = await this.prisma.seedStatus.findUnique({
@@ -14,6 +15,8 @@ export class SeedService {
     if (seedStatus?.executed) {
       return; 
     }
+
+    const hashedPassword = await this.bcryptService.hashPassword(defaultData.user.password);
 
     const persona = await this.prisma.persona.create({
       data: {
@@ -27,7 +30,7 @@ export class SeedService {
         usuario: {
           create: {
             user_name: defaultData.user.user_name,
-            contraseña: defaultData.user.password,
+            contraseña: hashedPassword,
             rol: defaultData.user.role,
           },
         }

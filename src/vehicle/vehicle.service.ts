@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, HttpException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  HttpException,
+  BadRequestException,
+} from '@nestjs/common';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -64,7 +69,6 @@ export class VehicleService {
         data: result,
         statusCode: 201,
       };
-
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -88,7 +92,7 @@ export class VehicleService {
         message: 'Vehiculos encontrados exitosamente',
         data: vehicles,
         statusCode: 200,
-      }
+      };
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -113,11 +117,10 @@ export class VehicleService {
       }
 
       return {
-       message: 'Vehiculo encontrado exitosamente',
+        message: 'Vehiculo encontrado exitosamente',
         data: vehicle,
         statusCode: 200,
-      }
-
+      };
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -144,8 +147,7 @@ export class VehicleService {
         message: 'Vehiculo encontrado exitosamente',
         data: vehicle,
         statusCode: 200,
-      }
-
+      };
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -173,8 +175,7 @@ export class VehicleService {
         message: 'Vehiculos encontrados exitosamente',
         data: vehicles,
         statusCode: 200,
-      }
-
+      };
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -226,8 +227,7 @@ export class VehicleService {
         message: 'Vehiculos encontrados exitosamente',
         data: vehicles,
         statusCode: 200,
-      }
-
+      };
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -246,111 +246,64 @@ export class VehicleService {
       estado,
       cedula_cliente,
     } = updateVehicleDto;
-
-    if (
-      !placa &&
-      !marca &&
-      !modelo &&
-      !color &&
-      !tipo &&
-      !año &&
-      !kilometraje &&
-      !estado &&
-      !cedula_cliente
-    ) {
-      throw new HttpException(
-        'Debe proporcionar al menos un campo para actualizar',
-        400,
-      );
-    }
-
+  
+    let clientId: string | undefined;
+  
     const vehicle = await this.prisma.vehiculo.findUnique({
       where: { id },
+      include: { cliente: true },
     });
-
+  
     if (!vehicle) {
       throw new NotFoundException('Vehiculo no encontrado');
     }
-
+  
+    if (cedula_cliente) {
+      const client = await this.prisma.cliente.findFirst({
+        where: { datos: { cedula_identidad: cedula_cliente } },
+      });
+  
+      if (!client) {
+        throw new NotFoundException('Cliente no encontrado');
+      }
+  
+      if (vehicle.cliente?.id === client.id) {
+        throw new BadRequestException('El vehículo ya está asociado a este cliente');
+      }
+  
+      clientId = client.id;
+    }
+  
     try {
       const result = await this.prisma.$transaction(async (prisma) => {
-        let persona: any;
-        if (cedula_cliente) {
-          persona = await prisma.persona.findUnique({
-            where: {
-              cedula_identidad: cedula_cliente,
-              tipo_persona: 'CLIENTE',
-            },
-            include: {
-              cliente: true,
-            },
-          });
-
-          if (!persona) {
-            throw new NotFoundException('Cliente no encontrado');
-          }
-
-          const updateVehicle = await prisma.vehiculo.update({
-            where: { id },
-            data: {
-              placa,
-              marca,
-              modelo,
-              color,
-              tipo,
-              año,
-              kilometraje,
-              estado,
-              cliente: {
-                connect: {
-                  id: persona.cliente.id,
-                },
-              },
-            },
-            include: {
-              cliente: {
-                include: {
-                  datos: true,
-                },
-              },
-            },
-          });
-          return updateVehicle;
-        } else {
-          const updateVehicle = await prisma.vehiculo.update({
-            where: { id },
-            data: {
-              placa: placa.toUpperCase(),
-              marca,
-              modelo,
-              color,
-              tipo,
-              año,
-              kilometraje,
-              estado,
-            },
-            include: {
-              cliente: {
-                include: {
-                  datos: true,
-                },
-              },
-            },
-          });
-          return updateVehicle;
-        }
+        return await prisma.vehiculo.update({
+          where: { id },
+          data: {
+            placa,
+            marca,
+            modelo,
+            color,
+            tipo,
+            año,
+            kilometraje,
+            estado,
+            cliente: clientId ? { connect: { id: clientId } } : undefined , 
+          },
+        });
       });
+  
       return {
-        message: 'Vehiculo actualizado correctamente',
+        message: 'Vehículo actualizado correctamente',
         data: result,
         statusCode: 200,
       };
-
     } catch (error) {
+      console.error('Error al actualizar vehículo:', error); 
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
     }
   }
+  
 
   async deleteVehicle(id: string) {
     try {
@@ -375,7 +328,6 @@ export class VehicleService {
         data: result,
         statusCode: 200,
       };
-
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);

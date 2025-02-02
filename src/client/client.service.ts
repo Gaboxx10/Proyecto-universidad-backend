@@ -10,9 +10,6 @@ import { UpdateClientDto } from './dto/update-client.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Errors } from 'src/shared/errors.service';
 
-
-const CLIENTE = 'CLIENTE';
-
 @Injectable()
 export class ClientService {
   constructor(
@@ -21,7 +18,7 @@ export class ClientService {
   ) {}
 
   private entity = 'cliente';
-  private tipo_persona = "CLIENTE";
+  private tipo_persona = 'CLIENTE';
 
   async createClient(createClientDto: CreateClientDto) {
     const {
@@ -54,7 +51,7 @@ export class ClientService {
                 tipo_persona: this.tipo_persona,
                 nombres,
                 apellidos,
-                cedula_identidad: cdiOrRIF,
+                cedula_identidad,
                 cedula_id_detalles: cdiOrRIF,
                 telefono,
                 direccion,
@@ -67,11 +64,11 @@ export class ClientService {
           },
         });
         return client;
-      })
+      });
       return {
         message: 'Cliente creado exitosamente',
         data: result,
-        statusCode: 201
+        statusCode: 201,
       };
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
@@ -102,7 +99,6 @@ export class ClientService {
         data: clients,
         statusCode: 200,
       };
-
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -126,7 +122,6 @@ export class ClientService {
         data: client,
         statusCode: 200,
       };
-
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -138,8 +133,7 @@ export class ClientService {
     const page = parseInt(offset, 10) || 1;
     const skip = (page - 1) * limit;
     try {
-
-       const clients = await this.prisma.cliente.findMany({
+      const clients = await this.prisma.cliente.findMany({
         where: {
           datos: {
             OR: [
@@ -152,9 +146,9 @@ export class ClientService {
                 },
                 cedula_identidad: {
                   contains: name,
-                }
+                },
               },
-            ]
+            ],
           },
         },
         skip,
@@ -166,7 +160,7 @@ export class ClientService {
           datos: {
             nombres: 'asc',
           },
-        }
+        },
       });
 
       if (!clients || clients.length === 0) {
@@ -178,7 +172,6 @@ export class ClientService {
         data: clients,
         statusCode: 200,
       };
-
     } catch (error) {
       console.log(error);
       const errorData = this.errors.handleError(error, this.entity);
@@ -202,13 +195,12 @@ export class ClientService {
       if (!client) {
         return new NotFoundException('Usuario no encontrado');
       }
-      
+
       return {
         message: 'Cliente encontrado exitosamente',
         data: client,
         statusCode: 200,
       };
-      
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -235,19 +227,28 @@ export class ClientService {
 
     try {
       const result = await this.prisma.$transaction(async (prisma) => {
+        // Buscar cliente
         const client = await prisma.cliente.findUnique({
           where: { id },
-          include: {
-            datos: true,
-          },
+          include: { datos: true },
         });
 
         if (!client) {
           throw new NotFoundException('Cliente no encontrado');
         }
 
-        //TODO: CEDULAA Y TIPO CLIENTE
+        // Validar si la cédula ya está registrada
+        if (cedula_identidad) {
+          const existingClient = await prisma.cliente.findFirst({
+            where: { datos: { cedula_identidad } },
+          });
 
+          if (existingClient) {
+            throw new BadRequestException('Esta cédula ya está registrada');
+          }
+        }
+
+        // Actualización del cliente
         const updatedClient = await prisma.cliente.update({
           where: { id },
           data: {
@@ -255,27 +256,29 @@ export class ClientService {
               update: {
                 nombres,
                 apellidos,
-                cedula_identidad,
                 telefono,
                 direccion,
                 email,
+                cedula_identidad: cedula_identidad
+                  ? cedula_identidad
+                  : undefined,
+                cedula_id_detalles: cedula_identidad
+                  ? 'V-' + cedula_identidad
+                  : undefined,
               },
             },
           },
-          include: {
-            datos: true,
-          },
+          include: { datos: true },
         });
 
         return updatedClient;
-        });
+      });
 
       return {
         message: 'Cliente actualizado exitosamente',
         data: result,
         statusCode: 200,
       };
-
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -287,7 +290,7 @@ export class ClientService {
       const client = await this.prisma.cliente.findUnique({
         where: { id },
         include: {
-          datos: true
+          datos: true,
         },
       });
 
