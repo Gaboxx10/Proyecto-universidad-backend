@@ -26,12 +26,23 @@ export class CompanyService {
   }
 
   async updateInfo(updateCompanyDto: UpdateCompanyDto) {
+
+    const { nombre, direccion, telefono, rif, email } = updateCompanyDto;
+
     try {
+
       const company = await this.prisma.empresa.update({
         where: {
           id: 1,
         },
-        data: updateCompanyDto,
+        data: {
+          nombre: nombre || undefined,
+          direccion: direccion || undefined,
+          telefono: telefono || undefined,
+          rif: rif || undefined,
+          rif_detalles: "J-" + rif || undefined,
+          email: updateCompanyDto.email || undefined,
+        },
       });
 
       const updateData = await this.prisma.empresa.findUnique({

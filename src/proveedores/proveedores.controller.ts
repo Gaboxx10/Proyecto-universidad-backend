@@ -23,13 +23,18 @@ export class ProveedoresController {
     return this.proveedoresService.findProviderById(id)
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProveedoreDto: UpdateProveedoreDto) {
-    //return this.proveedoresService.update(+id, updateProveedoreDto);
+  @Get('/providers/name/:name')
+  findProviderByName(@Param('name') name: string, @Query("offset") offset: string) {
+    return this.proveedoresService.findProviderByName(name, offset)
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    //return this.proveedoresService.remove(+id);
+  @Patch('/providers/id/:id/update')
+  updateProvider(@Param('id') id: string, @Body() updateProveedoreDto: UpdateProveedoreDto) {
+    return this.proveedoresService.updateProvider(id, updateProveedoreDto);
+  }
+
+  @Delete('/providers/id/:id/delete')
+  deleteProvider(@Param('id') id: string) {
+    return this.proveedoresService.deleteProvider(id);
   }
 }

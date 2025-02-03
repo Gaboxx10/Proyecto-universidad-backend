@@ -4,6 +4,7 @@ import { UpdateDiagnosticoDto } from './dto/update-diagnostico.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { VehicleService } from 'src/vehicle/vehicle.service';
 import { Errors } from 'src/shared/errors.service';
+import { PdfService } from 'src/pdf/pdf.service';
 
 @Injectable()
 export class DiagnosticosService {
@@ -69,7 +70,6 @@ export class DiagnosticosService {
         data: result,
         statusCode: 201,
       };
-
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -115,7 +115,15 @@ export class DiagnosticosService {
         },
         include: {
           revisiones: true,
-          vehiculo: true,
+          vehiculo: {
+            include: {
+              cliente: {
+                include: {
+                  datos: true,
+                },
+              },
+            },
+          },
         },
       });
 
@@ -127,7 +135,6 @@ export class DiagnosticosService {
         data: diagnostico,
         statusCode: 200,
       };
-
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -166,7 +173,7 @@ export class DiagnosticosService {
         include: {
           vehiculo: true,
           revisiones: true,
-        }
+        },
       });
 
       if (!diagnosticos || diagnosticos.length === 0) {
@@ -174,11 +181,10 @@ export class DiagnosticosService {
       }
 
       return {
-        message: 'Diagnosticos encontrados',  
+        message: 'Diagnosticos encontrados',
         data: diagnosticos,
         statusCode: 200,
       };
-
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -207,12 +213,48 @@ export class DiagnosticosService {
           result: diagnostico,
           statusCode: 200,
         };
-        
       });
       return result;
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
+    }
+  }
+
+  async printDiagnostic(id: string) {
+    {
+      try {
+        const diagnostic = await this.prisma.diagnostico.findUnique({
+          where: {
+            id: id,
+          },
+          include: {
+            vehiculo: {
+              include: {
+                cliente: {
+                  include: {
+                    datos: true,
+                  },
+                },
+              },
+            },
+            revisiones: true,
+          },
+        });
+
+        if (!diagnostic) {
+          throw new NotFoundException('Diagnostico no encontrado');
+        }
+
+        return {
+          data: diagnostic,
+          docType: this.entity,
+        };
+
+      } catch (error) {
+        const errorData = this.errors.handleError(error, this.entity);
+        return new HttpException(errorData, errorData.status);
+      }
     }
   }
 }

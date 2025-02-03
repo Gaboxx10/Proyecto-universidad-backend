@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import PdfPrinter from 'pdfmake';
 import { TDocumentDefinitions } from 'pdfmake/interfaces';
+import { TemplateService } from './templates/templateService';
 
 const fonts = {
   Roboto: {
@@ -14,10 +15,26 @@ const fonts = {
 @Injectable()
 export class PdfService {
   private pdfPrinter = new PdfPrinter(fonts);
+  constructor(
+    private templateService: TemplateService,
+  ) {}
 
+  async generatePDF (data, docType: string) {
+    try {
+      if(docType === 'diagnostico') {
+        const docDefinition = await this.templateService.generateDiagnosticDef(data);
+        const pdfDoc = await this.createPdf(docDefinition);
+        return pdfDoc;
+      }
 
-  async generatePdf(docDefinition: any) {
-    return this.pdfPrinter.createPdfKitDocument(docDefinition);
+    } catch (error) {
+      console.log(error);
+    }
   }
 
+
+  async createPdf(docDefinition: TDocumentDefinitions) {
+    return this.pdfPrinter.createPdfKitDocument(docDefinition);
+  }
+  
 }
