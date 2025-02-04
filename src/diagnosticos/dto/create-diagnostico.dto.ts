@@ -1,15 +1,27 @@
-import { IsString, IsArray, ArrayNotEmpty, IsObject, ValidateNested, IsNotEmpty, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsArray,
+  ArrayNotEmpty,
+  IsObject,
+  ValidateNested,
+  IsNotEmpty,
+  IsOptional,
+  Matches,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateDiagnosticoDto {
   @IsString({ message: 'La placa del vehículo debe ser una cadena de texto.' })
   @IsNotEmpty({ message: 'La placa del vehículo es obligatoria.' })
+  @Matches(/^[A-Za-z0-9]+$/, {
+    message: 'La placa solo puede contener letras y números, sin símbolos.',
+  })
   placa_vehiculo: string;
 
   @IsArray({ message: 'Las observaciones deben ser un array.' })
   @ArrayNotEmpty({ message: 'Debe haber al menos una observación.' })
   @ValidateNested({ each: true, message: 'Cada observación debe ser válida.' })
-  @Type(() => ObservacionDto) 
+  @Type(() => ObservacionDto)
   observaciones: ObservacionDto[];
 }
 
@@ -28,6 +40,9 @@ export class ObservacionDto {
 
   @IsString({ message: 'La nota debe ser una cadena de texto.' })
   @IsOptional()
-  @IsNotEmpty({ message: 'La nota no puede estar vacía si se proporciona.', always: true })
+  @IsNotEmpty({
+    message: 'La nota no puede estar vacía si se proporciona.',
+    always: true,
+  })
   nota?: string;
 }

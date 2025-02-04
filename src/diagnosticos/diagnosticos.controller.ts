@@ -63,7 +63,7 @@ export class DiagnosticosController {
     const diagnosticData = await this.diagnosticosService.printDiagnostic(id);
 
     if (diagnosticData instanceof Error) {
-      throw new Error(diagnosticData.message);
+      return res.status(404).json({ message: 'Error al exportar diagnóstico' });
     }
 
     const data = diagnosticData.data;

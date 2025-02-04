@@ -18,5 +18,8 @@ export const defaultData = {
         email: "empresa1@empresa.com",
         rif: "123456789",
         rif_detalles: "J-123456789",
+        razon_social: "C.A",
+        iva: 16,
+        moneda: "Bs"
     }
 }

@@ -68,7 +68,7 @@ model Vehiculo {
   diagnosticos   Diagnostico[]
   presupuestos   Presupuesto[]
   ordenesTrabajo OrdenTrabajo[]
-  factturas      Factura[]
+  facturas       Factura[]
 
   estado     String   @default("Null")
   created_at DateTime @default(now())
@@ -101,7 +101,7 @@ model Presupuesto {
   num_presupuesto Int                  @default(1)
   f_emision       DateTime             @default(now())
   f_validez       DateTime
-  total_pagar     Float
+  total_pagar     Decimal                @default(0)
   detalles        DetallePresupuesto[]
 
   vehiculoId String
@@ -111,12 +111,12 @@ model Presupuesto {
 }
 
 model DetallePresupuesto {
-  id              String @id @default(uuid())
+  id              String  @id @default(uuid())
   descripcion     String
   nota            String
   cantidad        Int
-  precio_unitario Float
-  importe         Float
+  precio_unitario Decimal   
+  importe         Decimal    
 
   presupuestoId String
   presupuesto   Presupuesto @relation(fields: [presupuestoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -151,14 +151,17 @@ model Factura {
   id          String   @id @default(uuid())
   num_factura Int      @default(1)
   f_emision   DateTime @default(now())
-  subtotal    Float
-  iva         Float
-  total_pagar Float
+  subtotal    Decimal
+  iva         Decimal
+  total_pagar Decimal
+
+  f_entrada_veh DateTime
+  f_salida_veh  DateTime
 
   clienteId String
   cliente   Cliente           @relation(fields: [clienteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   detalles  DetallesFactura[]
-  pago      Boolean
+  pago      Boolean           @default(false)
 
   created_at DateTime  @default(now())
   Vehiculo   Vehiculo? @relation(fields: [vehiculoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -166,11 +169,11 @@ model Factura {
 }
 
 model DetallesFactura {
-  id              String @id @default(uuid())
+  id              String  @id @default(uuid())
   descripcion     String
   cantidad        Int
-  precio_unitario Float
-  total           Float
+  precio_unitario Decimal
+  total           Decimal
   facturaId       String
 
   factura Factura @relation(fields: [facturaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -179,7 +182,7 @@ model DetallesFactura {
 model Proveedores {
   id           String  @id @default(uuid())
   nombre       String
-  telefono     String @unique
+  telefono     String  @unique
   direccion    String?
   rif          String? @unique
   rif_detalles String?
@@ -187,13 +190,18 @@ model Proveedores {
 }
 
 model Empresa {
-  id           Int    @id @default(autoincrement())
-  nombre       String @default("")
-  direccion    String @default("")
-  telefono     String @default("")
-  rif          String @default("")
-  rif_detalles String @default("")
-  email        String @default("")
+  id           Int     @id @default(autoincrement())
+  nombre       String  @default("")
+  razon_social String  @default("")
+  direccion    String  @default("")
+  telefono     String  @default("")
+  rif          String  @default("")
+  rif_detalles String  @default("")
+  email        String  @default("")
+  logo         String? @default("")
+  moneda       String  @default("Bs")
+
+  iva Decimal @default(0.0)
 }
 
 model SeedStatus {

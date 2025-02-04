@@ -27,9 +27,14 @@ export class CompanyService {
 
   async updateInfo(updateCompanyDto: UpdateCompanyDto) {
 
-    const { nombre, direccion, telefono, rif, email } = updateCompanyDto;
+    const { nombre, direccion, telefono, rif, email, iva, razon_social } = updateCompanyDto;
 
     try {
+
+      let ivaValue : number | undefined = undefined;
+      if (iva) {
+        ivaValue = iva / 100;
+      }
 
       const company = await this.prisma.empresa.update({
         where: {
@@ -41,7 +46,9 @@ export class CompanyService {
           telefono: telefono || undefined,
           rif: rif || undefined,
           rif_detalles: "J-" + rif || undefined,
-          email: updateCompanyDto.email || undefined,
+          email: email || undefined,
+          iva: ivaValue || undefined,
+          razon_social: razon_social || undefined,
         },
       });
 

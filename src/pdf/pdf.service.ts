@@ -25,6 +25,14 @@ export class PdfService {
         const docDefinition = await this.templateService.generateDiagnosticDef(data);
         const pdfDoc = await this.createPdf(docDefinition);
         return pdfDoc;
+      }else if(docType === "factura") {
+        const docDefinition = await this.templateService.generateInvoiceDef(data);
+        const pdfDoc = await this.createPdf(docDefinition);
+        return pdfDoc;
+      }else if(docType === "orden-trabajo"){
+        const docDefinition = await this.templateService.generateOrdenDef(data);
+        const pdfDoc = await this.createPdf(docDefinition);
+        return pdfDoc;
       }
 
     } catch (error) {

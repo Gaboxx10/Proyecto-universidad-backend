@@ -5,15 +5,21 @@ import {
   Max,
   IsOptional,
   IsNotEmpty,
-  IsDateString,
+  Matches,
 } from 'class-validator';
 
 export class CreateVehicleDto {
   @IsString({ message: 'La cédula del cliente debe ser una cadena de texto.' })
+  @Matches(/^\d+$/, {
+    message: 'La cédula del cliente debe contener solo números.',
+  })
   @IsNotEmpty({ message: 'La cédula del cliente es obligatoria.' })
   cedula_cliente: string;
 
   @IsString({ message: 'La placa debe ser una cadena de texto.' })
+  @Matches(/^[a-zA-Z0-9]+$/, {
+    message: 'La placa debe contener solo letras y números.',
+  })
   @IsNotEmpty({ message: 'La placa es obligatoria.' })
   placa: string;
 

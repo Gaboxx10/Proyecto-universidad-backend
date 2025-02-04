@@ -51,7 +51,7 @@ Table Vehiculo {
   diagnosticos Diagnostico [not null]
   presupuestos Presupuesto [not null]
   ordenesTrabajo OrdenTrabajo [not null]
-  factturas Factura [not null]
+  facturas Factura [not null]
   estado String [not null, default: 'Null']
   created_at DateTime [default: `now()`, not null]
 }
@@ -80,7 +80,7 @@ Table Presupuesto {
   num_presupuesto Int [not null, default: 1]
   f_emision DateTime [default: `now()`, not null]
   f_validez DateTime [not null]
-  total_pagar Float [not null]
+  total_pagar Decimal [not null, default: 0]
   detalles DetallePresupuesto [not null]
   vehiculoId String [not null]
   vehiculo Vehiculo [not null]
@@ -92,8 +92,8 @@ Table DetallePresupuesto {
   descripcion String [not null]
   nota String [not null]
   cantidad Int [not null]
-  precio_unitario Float [not null]
-  importe Float [not null]
+  precio_unitario Decimal [not null]
+  importe Decimal [not null]
   presupuestoId String [not null]
   presupuesto Presupuesto [not null]
 }
@@ -124,13 +124,15 @@ Table Factura {
   id String [pk]
   num_factura Int [not null, default: 1]
   f_emision DateTime [default: `now()`, not null]
-  subtotal Float [not null]
-  iva Float [not null]
-  total_pagar Float [not null]
+  subtotal Decimal [not null]
+  iva Decimal [not null]
+  total_pagar Decimal [not null]
+  f_entrada_veh DateTime [not null]
+  f_salida_veh DateTime [not null]
   clienteId String [not null]
   cliente Cliente [not null]
   detalles DetallesFactura [not null]
-  pago Boolean [not null]
+  pago Boolean [not null, default: false]
   created_at DateTime [default: `now()`, not null]
   Vehiculo Vehiculo
   vehiculoId String
@@ -140,8 +142,8 @@ Table DetallesFactura {
   id String [pk]
   descripcion String [not null]
   cantidad Int [not null]
-  precio_unitario Float [not null]
-  total Float [not null]
+  precio_unitario Decimal [not null]
+  total Decimal [not null]
   facturaId String [not null]
   factura Factura [not null]
 }
@@ -159,11 +161,15 @@ Table Proveedores {
 Table Empresa {
   id Int [pk, increment]
   nombre String [not null, default: '']
+  razon_social String [not null, default: '']
   direccion String [not null, default: '']
   telefono String [not null, default: '']
   rif String [not null, default: '']
   rif_detalles String [not null, default: '']
   email String [not null, default: '']
+  logo String [default: '']
+  moneda String [not null, default: 'Bs']
+  iva Decimal [not null, default: 0]
 }
 
 Table SeedStatus {

@@ -8,9 +8,10 @@ import {
   IsInt,
   Min,
   Max,
+  Matches
 } from 'class-validator';
 
-export class DetallePresupuestoDto {
+export class DetalleOrdenDto {
   @IsNotEmpty({ message: 'La observación es obligatoria.' })
   @IsString({ message: 'La observación debe ser una cadena de texto.' })
   observacion: string;
@@ -38,6 +39,7 @@ export class DetallePresupuestoDto {
 export class CreateOrdenesTrabajoDto {
   @IsString({ message: 'La placa del vehículo debe ser una cadena de texto.' })
   @IsNotEmpty({ message: 'La placa del vehículo es obligatoria.' })
+  @Matches(/^[A-Za-z0-9]+$/, { message: 'La placa solo debe contener letras y números.' })
   placa_vehiculo: string;
 
   @IsOptional()
@@ -46,7 +48,7 @@ export class CreateOrdenesTrabajoDto {
 
   @IsArray({ message: 'Los detalles deben ser un array de objetos.' })
   @IsNotEmpty({ message: 'Debe haber al menos un detalle en el presupuesto.' })
-  detalles: DetallePresupuestoDto[];
+  detalles: DetalleOrdenDto[];
 
   @IsOptional()
   @IsString({ message: 'La nota adicional debe ser una cadena de texto.' })

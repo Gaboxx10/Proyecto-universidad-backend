@@ -25,7 +25,7 @@ export class OrdenesTrabajoService {
           await this.vehicleService.findVehicleByPlaca(placa_vehiculo);
 
         if (vehicle instanceof Error || !vehicle) {
-          throw new Error('Vehículo no encontrado');
+          throw new NotFoundException('Vehículo no encontrado');
         }
 
         const lastOrden = await prisma.ordenTrabajo.findFirst({
@@ -72,7 +72,6 @@ export class OrdenesTrabajoService {
         data: result,
         status: 201,
       };
-
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -96,15 +95,15 @@ export class OrdenesTrabajoService {
         skip,
         take: limit,
       });
-      if(ordenes.length === 0) {
-        throw new Error('No hay ordenes de trabajo disponibles');
+
+      if (ordenes.length === 0) {
+        throw new NotFoundException('No hay ordenes de trabajo disponibles');
       }
       return {
         message: 'Ordenes de trabajo encontradas',
         data: ordenes,
         status: 200,
       };
-
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -119,7 +118,15 @@ export class OrdenesTrabajoService {
         },
         include: {
           detalles: true,
-          vehiculo: true,
+          vehiculo: {
+            include: {
+              cliente:{
+                include:{
+                  datos:true
+                }
+              }
+            },
+          },
         },
       });
       if (!orden) {
@@ -130,7 +137,6 @@ export class OrdenesTrabajoService {
         data: orden,
         status: 200,
       };
-
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -138,15 +144,14 @@ export class OrdenesTrabajoService {
   }
 
   async findOrdersByVehicle(placa_vehiculo: string, offset: string) {
- 
     const limit = 10;
     const page = parseInt(offset) || 1;
     const skip = (page - 1) * limit;
-  
-    try {
 
-      const vehicle = await this.vehicleService.findVehicleByPlaca(placa_vehiculo);
-      
+    try {
+      const vehicle =
+        await this.vehicleService.findVehicleByPlaca(placa_vehiculo);
+
       if (vehicle instanceof Error || !vehicle) {
         throw new NotFoundException('Vehículo no encontrado');
       }
@@ -169,7 +174,7 @@ export class OrdenesTrabajoService {
       });
 
       if (!ordenes || ordenes.length === 0) {
-        throw new NotFoundException("No se encontraron ordenes de trabajo")
+        throw new NotFoundException('No se encontraron ordenes de trabajo');
       }
 
       return {
@@ -177,7 +182,6 @@ export class OrdenesTrabajoService {
         data: ordenes,
         status: 200,
       };
-
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -185,7 +189,7 @@ export class OrdenesTrabajoService {
   }
 
   //update(id: number, updateOrdenesTrabajoDto: UpdateOrdenesTrabajoDto) {
-   // return `This action updates a #${id} ordenesTrabajo`;
+  // return `This action updates a #${id} ordenesTrabajo`;
   //}
 
   async deleteOrden(id: string) {
@@ -196,7 +200,7 @@ export class OrdenesTrabajoService {
         },
       });
 
-      if(!orden) {
+      if (!orden) {
         throw new NotFoundException('Orden de trabajo no encontrada');
       }
       await this.prisma.ordenTrabajo.delete({
@@ -210,11 +214,44 @@ export class OrdenesTrabajoService {
         data: orden,
         status: 200,
       };
-      
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
     }
-    
+  }
+
+  async printOrden(id: string) {
+    try {
+      const orden = await this.prisma.ordenTrabajo.findUnique({
+        where: {
+          id,
+        },
+        include: {
+          detalles: true,
+          vehiculo: {
+            include: {
+              cliente: {
+                include: {
+                  datos: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if(!orden) {
+        throw new NotFoundException('Orden de trabajo no encontrada');
+      }
+
+      return {
+        data: orden,
+        docType: this.entity
+      };
+
+    } catch (error) {
+      const errorData = this.errors.handleError(error, this.entity);
+      return new HttpException(errorData, errorData.status);
+    }
   }
 }

@@ -14,12 +14,14 @@ export class CreateUsuarioDto {
     apellidos: string;
 
     @IsString({ message: 'La cédula de identidad debe ser una cadena de texto.' })
+    @Matches(/^\d+$/, { message: 'La cédula de identidad debe contener solo números.' })  
     @MinLength(8, { message: 'La cédula de identidad debe tener al menos 8 caracteres.' })
     @MaxLength(11, { message: 'La cédula de identidad no debe exceder los 11 caracteres.' })
     @IsNotEmpty({ message: 'La cédula de identidad es obligatoria.' })
     cedula_identidad: string;
 
     @IsString({ message: 'El teléfono debe ser una cadena de texto.' })
+    @Matches(/^\d+$/, { message: 'El teléfono debe contener solo números.' })  
     @MinLength(11, { message: 'El teléfono debe tener 11 caracteres.' })
     @MaxLength(11, { message: 'El teléfono debe tener exactamente 11 caracteres.' })
     @IsNotEmpty({ message: 'El teléfono es obligatorio.' })

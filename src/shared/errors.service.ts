@@ -1,13 +1,37 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { ValidationError } from 'class-validator';
-import { HttpException, NotFoundException } from '@nestjs/common'; // Importación de excepciones
+import {
+  HttpException,
+  NotFoundException,
+  BadRequestException,
+  UnauthorizedException,
+  ForbiddenException,
+  InternalServerErrorException,
+  MethodNotAllowedException,
+  ConflictException,
+  UnprocessableEntityException,
+  GatewayTimeoutException,
+} from '@nestjs/common';
+// Importación de excepciones
 
 @Injectable()
 export class Errors {
   handleError(error: any, entity: string) {
     // Verificar si el error es una HttpException o NotFoundException
-    if (error instanceof HttpException || error instanceof NotFoundException) {
+
+    if (
+      error instanceof HttpException ||
+      error instanceof NotFoundException ||
+      error instanceof BadRequestException ||
+      error instanceof UnauthorizedException ||
+      error instanceof ForbiddenException ||
+      error instanceof InternalServerErrorException ||
+      error instanceof MethodNotAllowedException ||
+      error instanceof ConflictException ||
+      error instanceof UnprocessableEntityException ||
+      error instanceof GatewayTimeoutException
+    ) {
       return error.getResponse(); // Retorna directamente la respuesta de la excepción
     }
 
@@ -121,9 +145,9 @@ export class Errors {
       presupuesto: `El presupuesto con el campo '${field}' tiene un valor duplicado o conflictivo.`,
       usuario: `El usuario con el campo '${field}' tiene un valor duplicado o conflictivo.`,
       'orden-trabajo': `La orden de trabajo con el campo '${field}' tiene un valor duplicado o conflictivo.`,
-      proveedores: this.customizeProveedorFieldError(field), 
+      proveedores: this.customizeProveedorFieldError(field),
       empresa: this.customizeEmpresaFieldError(field),
-
+      factura: this.customizeFacturaFieldError(field),
     };
 
     return (
@@ -145,6 +169,21 @@ export class Errors {
     return (
       clientMessages[field] ||
       `El campo '${field}' tiene un valor duplicado o conflictivo.`
+    );
+  }
+
+  private customizeFacturaFieldError(field: string): string {
+    const facturaMessages = {
+      numero:
+        'El número de factura ya está registrado. Por favor, ingresa otro.',
+      fecha_emision:
+        'La fecha de emisión no es válida o ya existe una factura con esta fecha.',
+      total: 'El monto total de la factura no puede ser negativo o nulo.',
+    };
+
+    return (
+      facturaMessages[field] ||
+      `El campo '${field}' tiene un valor duplicado o conflictivo en la factura.`
     );
   }
 
@@ -175,19 +214,22 @@ export class Errors {
 
   private customizeEmpresaFieldError(field: string): string {
     const empresaMessages = {
-      nombre: 'El nombre de la empresa ya está registrado. Por favor, elige otro.',
+      nombre:
+        'El nombre de la empresa ya está registrado. Por favor, elige otro.',
       rif: 'El RIF de la empresa ya está registrado. Por favor, utiliza otro.',
-      email: 'El correo electrónico de la empresa ya está registrado. Por favor, usa otro.',
-      telefono: 'El número de teléfono de la empresa ya está en uso. Intenta con otro.',
-      direccion: 'La dirección de la empresa ya está registrada. Verifica y prueba con una dirección diferente.',
+      email:
+        'El correo electrónico de la empresa ya está registrado. Por favor, usa otro.',
+      telefono:
+        'El número de teléfono de la empresa ya está en uso. Intenta con otro.',
+      direccion:
+        'La dirección de la empresa ya está registrada. Verifica y prueba con una dirección diferente.',
     };
-  
+
     return (
       empresaMessages[field] ||
       `El campo '${field}' tiene un valor duplicado o conflictivo en la empresa.`
     );
   }
-  
 
   private formatErrorResponse(
     message: string,
