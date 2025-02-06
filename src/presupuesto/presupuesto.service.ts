@@ -1,10 +1,16 @@
-import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreatePresupuestoDto } from './dto/create-presupuesto.dto';
 import { UpdatePresupuestoDto } from './dto/update-presupuesto.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { VehicleService } from '../vehicle/vehicle.service';
 import { Errors } from '../shared/errors.service';
 import Decimal from 'decimal.js';
+import { formatPresupuestoData } from './utils/format-presupuesto.util';
 
 @Injectable()
 export class PresupuestoService {
@@ -24,16 +30,30 @@ export class PresupuestoService {
         throw new NotFoundException('Vehículo no encontrado');
       }
 
-      let total_pagar = new Decimal(0); // Usar Decimal para total_pagar
+      const generarPresupuesto = (presupuesto: any) => {
+        let totalPagar = new Decimal(0);
 
-      const detallesConImporte = detalles.map((item) => {
-        const importe = new Decimal(item.cantidad).times(item.precio_unitario); // Usar Decimal para cálculo del importe
-        total_pagar = total_pagar.plus(importe); // Usar Decimal para suma del total
+        presupuesto.detalles.forEach((detalle: any) => {
+          const importe = new Decimal(detalle.cantidad).times(
+            new Decimal(detalle.precio_unitario),
+          );
+
+          totalPagar = totalPagar.plus(importe);
+
+          detalle['importe'] = importe.toFixed(2);
+          detalle['precio_unitario'] = new Decimal(
+            detalle.precio_unitario,
+          ).toFixed(2);
+        });
+
         return {
-          ...item,
-          importe: importe.toFixed(2), // Redondear el importe a 2 decimales
+          vehicle: vehicle.data.id,
+          f_emision: new Date(),
+          f_validez: new Date(),
+          detalles: presupuesto.detalles,
+          total_pagar: totalPagar.toNumber(),
         };
-      });
+      };
 
       const result = await this.prisma.$transaction(async (prisma) => {
         const lastPresupuesto = await prisma.presupuesto.findFirst({
@@ -48,26 +68,27 @@ export class PresupuestoService {
         const num_presupuesto = lastPresupuesto
           ? lastPresupuesto.num_presupuesto + 1
           : 1;
-        const today = new Date();
 
-        const presupuesto = await prisma.presupuesto.create({
+        const presupuesto = generarPresupuesto(createPresupuestoDto);
+
+        const presupuestoGenerado = await prisma.presupuesto.create({
           data: {
             num_presupuesto,
-            f_emision: today,
-            f_validez: today,
-            total_pagar: total_pagar.toFixed(2), // Redondear a 2 decimales
+            f_emision: presupuesto.f_emision,
+            f_validez: presupuesto.f_validez,
+            total_pagar: presupuesto.total_pagar.toFixed(2), // Redondear a 2 decimales
             vehiculo: {
               connect: {
-                id: vehicle.data.id,
+                id: presupuesto.vehicle,
               },
             },
             detalles: {
-              create: detallesConImporte.map((item) => ({
-                descripcion: item.descripcion,
-                cantidad: item.cantidad,
-                precio_unitario: item.precio_unitario,
-                importe: item.importe,
-                nota: item.nota,
+              create: presupuesto.detalles.map((detalle) => ({
+                descripcion: detalle.descripcion,
+                cantidad: detalle.cantidad,
+                precio_unitario: detalle.precio_unitario,
+                importe: detalle.importe,
+                nota: detalle.nota,
               })),
             },
           },
@@ -76,7 +97,7 @@ export class PresupuestoService {
           },
         });
 
-        return presupuesto;
+        return presupuestoGenerado;
       });
 
       return {
@@ -96,7 +117,7 @@ export class PresupuestoService {
     const skip = (page - 1) * limit;
 
     try {
-      const presupuestos = this.prisma.presupuesto.findMany({
+      const presupuestos = await this.prisma.presupuesto.findMany({
         skip,
         take: limit,
         orderBy: {
@@ -107,9 +128,17 @@ export class PresupuestoService {
           detalles: true,
         },
       });
+
+      if (presupuestos.length === 0) {
+        throw new NotFoundException('No se encontraron presupuestos');
+      }
+
+      console.log(presupuestos);
+      const formattedPresupuestos = formatPresupuestoData(presupuestos);
+
       return {
         message: 'Presupuestos encontrados',
-        data: presupuestos,
+        data: formattedPresupuestos,
         status: 200,
       };
     } catch (error) {
@@ -123,7 +152,15 @@ export class PresupuestoService {
       const presupuesto = await this.prisma.presupuesto.findUnique({
         where: { id },
         include: {
-          vehiculo: true,
+          vehiculo: {
+            include: {
+              cliente: {
+                include: {
+                  datos: true,
+                },
+              },
+            },
+          },
           detalles: true,
         },
       });
@@ -131,8 +168,65 @@ export class PresupuestoService {
       if (!presupuesto) {
         throw new NotFoundException('Presupuesto no encontrado');
       }
+
+      const formattedPresupuesto = formatPresupuestoData(presupuesto);
+
       return {
         message: 'Presupuesto encontrado',
+        data: formattedPresupuesto,
+        statusCode: 200,
+      };
+    } catch (error) {
+      const errorData = this.errors.handleError(error, this.entity);
+      return new HttpException(errorData, errorData.status);
+    }
+  }
+
+  async searchPresupuestos(search: string, offset: string) {
+    const limit = 10;
+    const page = parseInt(offset, 10) || 1;
+    const skip = (page - 1) * limit;
+
+    const placa_vehiculo = search.toUpperCase();
+    let num_presupuesto = parseInt(search);
+
+    if (isNaN(num_presupuesto)) {
+      num_presupuesto = undefined;
+    }
+
+    try {
+      let presupuesto = await this.prisma.presupuesto.findMany({
+        where: {
+          OR: [
+            {
+              num_presupuesto: {
+                equals: num_presupuesto,
+              },
+            },
+            {
+              vehiculo: {
+                placa: placa_vehiculo,
+              },
+            },
+          ],
+        },
+        include: {
+          detalles: true,
+          vehiculo: true,
+        },
+        skip,
+        take: limit,
+        orderBy: {
+          num_presupuesto: 'desc',
+        },
+      });
+
+      if (!presupuesto || presupuesto.length === 0) {
+        throw new NotFoundException('No se encontraron presupuestos');
+      }
+
+      return {
+        message: 'Presupuestos encontrados',
         data: presupuesto,
         statusCode: 200,
       };
@@ -147,11 +241,17 @@ export class PresupuestoService {
     const page = parseInt(offset, 10) || 1;
     const skip = (page - 1) * limit;
 
+    if (!placa) {
+      throw new BadRequestException('El parámetro "placa" es requerido');
+    }
+
+    const UPPER = placa.toUpperCase();
+
     try {
       const presupuesto = await this.prisma.presupuesto.findMany({
         where: {
           vehiculo: {
-            placa: placa,
+            placa: UPPER,
           },
         },
         orderBy: {
@@ -167,10 +267,16 @@ export class PresupuestoService {
       });
 
       if (presupuesto.length === 0) {
-        throw new NotFoundException('Presupuesto no encontrado');
+        throw new NotFoundException('Presupuestos no encontrados');
       }
 
-      return presupuesto;
+      const formattedPresupuesto = formatPresupuestoData(presupuesto);
+
+      return {
+        message: 'Presupuestos encontrados',
+        data: formattedPresupuesto,
+        statusCode: 200,
+      };
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
@@ -201,6 +307,40 @@ export class PresupuestoService {
       return {
         message: 'Presupuesto eliminado exitosamente',
         presupuesto: result,
+      };
+    } catch (error) {
+      const errorData = this.errors.handleError(error, this.entity);
+      return new HttpException(errorData, errorData.status);
+    }
+  }
+
+  async printPresupuesto(id: string) {
+    try {
+      const presupuesto = await this.prisma.presupuesto.findUnique({
+        where: { id },
+        include: {
+          vehiculo: {
+            include: {
+              cliente: {
+                include: {
+                  datos: true,
+                },
+              },
+            },
+          },
+          detalles: true,
+        },
+      });
+
+      if (!presupuesto) {
+        throw new NotFoundException('Presupuesto no encontrado');
+      }
+
+      const formattedPresupuesto = formatPresupuestoData(presupuesto);
+
+      return {
+        data: formattedPresupuesto,
+        docType: this.entity,
       };
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);

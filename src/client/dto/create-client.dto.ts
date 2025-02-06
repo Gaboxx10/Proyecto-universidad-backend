@@ -25,7 +25,7 @@ export class CreateClientDto {
     message: 'La cédula de identidad o RIF debe ser una cadena de texto.',
   })
   @IsNotEmpty({ message: 'La cédula de identidad o RIF es obligatoria.' })
-  @MinLength(8, {
+  @MinLength(7, {
     message: 'La cédula de identidad o RIF debe tener al menos 8 caracteres.',
   })
   @MaxLength(11, {

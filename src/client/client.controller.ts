@@ -26,10 +26,10 @@ export class ClientController {
   findClientByCI(@Param("ci") ci: string) {
     return this.clientService.findClientByCI(ci)
   }
-
-  @Get('/clients/name/:name') 
-  findClientByName(@Param("name") name: string, @Query("offset")  offset : string) {
-    return this.clientService.findClientByName(name, offset)
+ 
+  @Get("/clients/search")
+  searchClients(@Query("search") search: string, @Query("offset") offset: string) {
+    return this.clientService.searchClient(search, offset)
   }
 
   @Patch('/clients/id/:id/update')

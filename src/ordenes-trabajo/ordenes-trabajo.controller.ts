@@ -37,9 +37,9 @@ export class OrdenesTrabajoController {
     return this.ordenesTrabajoService.findOrdenById(id);
   }
 
-  @Get('/ordenes/placa/:placa')
-  findOrdenByPlaca(@Param('placa') placa: string, @Query() offset: string) {
-    return this.ordenesTrabajoService.findOrdersByVehicle(placa, offset);
+  @Get('/ordenes/search/')
+  searchOrden(@Query('search') search: string, @Query("offset") offset: string) {
+    return this.ordenesTrabajoService.searchOrden(search, offset);
   }
 
   @Delete('/ordenes/id/:id/delete')
@@ -52,9 +52,7 @@ export class OrdenesTrabajoController {
     const orden = await this.ordenesTrabajoService.printOrden(id);
 
     if (orden instanceof Error) {
-      return res
-        .status(404)
-        .json({ message: 'Error al exportar la orden de trabajo' });
+      return res.status(404).json({ message: orden.message, statusCode: 404 }); 
     }
 
     const ordenTrabajo = orden.data;
@@ -62,10 +60,16 @@ export class OrdenesTrabajoController {
 
     const pdf = await this.pdfService.generatePDF(ordenTrabajo, docType);
 
+    const date =  new Date().toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="Orden Nº${ordenTrabajo.num_orden}, ${ordenTrabajo.vehiculo.placa}, ${ordenTrabajo.vehiculo.cliente.datos.cedula_id_detalles}.pdf"`,
+      `attachment; filename="Orden Nº${ordenTrabajo.num_orden}, ${ordenTrabajo.vehiculo.placa}, ${ordenTrabajo.vehiculo.cliente.datos.cedula_id_detalles}, ${date}.pdf"`,
     );
 
     pdf.pipe(res);

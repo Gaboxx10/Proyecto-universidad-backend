@@ -143,7 +143,7 @@ export class Errors {
       vehiculo: this.customizeVehicleFieldError(field),
       diagnostico: `El diagnóstico con el campo '${field}' tiene un valor duplicado o conflictivo.`,
       presupuesto: `El presupuesto con el campo '${field}' tiene un valor duplicado o conflictivo.`,
-      usuario: `El usuario con el campo '${field}' tiene un valor duplicado o conflictivo.`,
+      usuario: this.customizeUsuarioFieldError(field),
       'orden-trabajo': `La orden de trabajo con el campo '${field}' tiene un valor duplicado o conflictivo.`,
       proveedores: this.customizeProveedorFieldError(field),
       empresa: this.customizeEmpresaFieldError(field),
@@ -169,6 +169,25 @@ export class Errors {
     return (
       clientMessages[field] ||
       `El campo '${field}' tiene un valor duplicado o conflictivo.`
+    );
+  }
+
+  private customizeUsuarioFieldError(field: string): string {
+    // Mapa con los mensajes personalizados para cada campo relacionado con el usuario
+    const usuarioMessages = {
+      telefono:
+        'El número de teléfono proporcionado ya está registrado. Por favor, utiliza otro.',
+      cedula_identidad:
+        'La cédula de identidad ya está registrada. Por favor, revisa y prueba con otra.',
+      user_name: 'El nombre de usuario ya está en uso. Elige otro nombre.',
+      email:
+        'El correo electrónico proporcionado ya está registrado. Usa otro correo.',
+    };
+
+    // Si el campo está en el mapa de usuarioMessages, devolver el mensaje personalizado
+    return (
+      usuarioMessages[field] ||
+      `El campo '${field}' tiene un valor duplicado o conflictivo en el usuario.`
     );
   }
 

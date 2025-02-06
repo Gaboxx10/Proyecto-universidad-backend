@@ -5,6 +5,9 @@ import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
 
+import { Rol } from 'src/constants/constants';
+import { Roles } from 'src/shared/decorators/roles.decorator';
+import { RolesGuard } from 'src/shared/guards/roles-auth.guard';
 
 @ApiTags('Usuario')
 @Controller('usuario')
@@ -53,4 +56,5 @@ export class UsuarioController {
   deleteUser(@Param('id') id: string) {
     return this.usuarioService.deleteUser(id);
   }
+
 }

@@ -10,6 +10,17 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { ClientService } from 'src/client/client.service';
 import { Errors } from 'src/shared/errors.service';
 
+export enum VehicleStatus {
+  REGISTERED = 'Registrado',
+  IN_DIAGNOSIS = 'En Diagnóstico',
+  IN_REPAIR = 'En Reparación',
+  IN_MAINTENANCE = 'En Mantenimiento',
+  WAITING = 'En Espera',
+  REPAIRED = 'Reparado',
+  NOT_REPAIRABLE = 'No Reparable',
+  DELIVERED = 'Entregado',
+}
+
 @Injectable()
 export class VehicleService {
   constructor(
@@ -85,7 +96,7 @@ export class VehicleService {
         skip,
         take: limit,
         orderBy: {
-          created_at: 'desc',
+          placa: 'asc',
         },
       });
       return {
@@ -246,34 +257,36 @@ export class VehicleService {
       estado,
       cedula_cliente,
     } = updateVehicleDto;
-  
+
     let clientId: string | undefined;
-  
+
     const vehicle = await this.prisma.vehiculo.findUnique({
       where: { id },
       include: { cliente: true },
     });
-  
+
     if (!vehicle) {
       throw new NotFoundException('Vehiculo no encontrado');
     }
-  
+
     if (cedula_cliente) {
       const client = await this.prisma.cliente.findFirst({
         where: { datos: { cedula_identidad: cedula_cliente } },
       });
-  
+
       if (!client) {
         throw new NotFoundException('Cliente no encontrado');
       }
-  
+
       if (vehicle.cliente?.id === client.id) {
-        throw new BadRequestException('El vehículo ya está asociado a este cliente');
+        throw new BadRequestException(
+          'El vehículo ya está asociado a este cliente',
+        );
       }
-  
+
       clientId = client.id;
     }
-  
+
     try {
       const result = await this.prisma.$transaction(async (prisma) => {
         return await prisma.vehiculo.update({
@@ -287,23 +300,22 @@ export class VehicleService {
             año,
             kilometraje,
             estado,
-            cliente: clientId ? { connect: { id: clientId } } : undefined , 
+            cliente: clientId ? { connect: { id: clientId } } : undefined,
           },
         });
       });
-  
+
       return {
         message: 'Vehículo actualizado correctamente',
         data: result,
         statusCode: 200,
       };
     } catch (error) {
-      console.error('Error al actualizar vehículo:', error); 
+      console.error('Error al actualizar vehículo:', error);
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
     }
   }
-  
 
   async deleteVehicle(id: string) {
     try {
@@ -326,6 +338,34 @@ export class VehicleService {
       return {
         message: 'Vehiculo eliminado correctamente',
         data: result,
+        statusCode: 200,
+      };
+    } catch (error) {
+      const errorData = this.errors.handleError(error, this.entity);
+      return new HttpException(errorData, errorData.status);
+    }
+  }
+
+  async updateStatus(id: string, status: string) {
+    try {
+      const vehicle = await this.prisma.vehiculo.findUnique({
+        where: { id },
+      });
+
+      if (!vehicle) {
+        throw new NotFoundException('Vehiculo no encontrado');
+      }
+
+      const updatedVehicle = await this.prisma.vehiculo.update({
+        where: { id },
+        data: {
+          estado: status,
+        },
+      });
+
+      return {
+        message: 'Estado del vehiculo actualizado correctamente',
+        data: updatedVehicle,
         statusCode: 200,
       };
     } catch (error) {

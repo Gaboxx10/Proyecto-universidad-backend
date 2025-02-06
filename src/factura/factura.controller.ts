@@ -40,6 +40,11 @@ export class FacturaController {
     return this.facturaService.findFacturaById(id);
   }
 
+  @Get('/facturas/search/')
+  searchFactura(@Query('search') search: string, @Query("offset") offset: string) {
+    return this.facturaService.searchFactura(search, offset);
+  }
+
   @Patch('/facturas/id/:id/confirm-pay')
   update(@Param('id') id: string, @Body() data: Pay) {
     return this.facturaService.confirmPay(id, data);
@@ -52,13 +57,12 @@ export class FacturaController {
 
   @Get('/facturas/id/:id/print')
   async printFactura(@Param('id') id: string, @Res() res: Response) {
-    console.log('id', id);
     const factura = await this.facturaService.printFactura(id);
 
     if (factura instanceof Error) {
-      return res.status(404).json({
-        message: "Error al exportar factura",
-      });
+      return res
+        .status(404)
+        .json({ message: factura.message, statusCode: 404 });
     }
 
     const data = factura.data;
@@ -66,10 +70,16 @@ export class FacturaController {
 
     const pdf = await this.pdfService.generatePDF(data, docType);
 
+    const date =  new Date().toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="Factura Nº${factura.data.num_factura}, ${factura.data.Vehiculo.placa}, ${factura.data.cliente.datos.cedula_id_detalles}.pdf"`,
+      `attachment; filename="Factura Nº${factura.data.num_factura}, ${factura.data.Vehiculo.placa}, ${factura.data.cliente.datos.cedula_id_detalles}, ${date}.pdf"`,
     );
 
     pdf.pipe(res);

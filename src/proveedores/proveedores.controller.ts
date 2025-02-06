@@ -23,9 +23,9 @@ export class ProveedoresController {
     return this.proveedoresService.findProviderById(id)
   }
 
-  @Get('/providers/name/:name')
-  findProviderByName(@Param('name') name: string, @Query("offset") offset: string) {
-    return this.proveedoresService.findProviderByName(name, offset)
+  @Get('/providers/search')
+  searchProviders(@Query('search') search: string , @Query("offset") offset: string) {
+    return this.proveedoresService.searchProviders(search, offset)
   }
 
   @Patch('/providers/id/:id/update')

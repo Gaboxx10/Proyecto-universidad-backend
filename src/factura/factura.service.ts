@@ -11,6 +11,7 @@ import { VehicleService } from 'src/vehicle/vehicle.service';
 import Decimal from 'decimal.js';
 import { Errors } from 'src/shared/errors.service';
 import { Pay } from './factura.controller';
+import { formatFacturaData } from './utils/format-factura.util';
 
 @Injectable()
 export class FacturaService {
@@ -40,8 +41,6 @@ export class FacturaService {
         throw new NotFoundException('Vehículo no encontrado');
       }
 
-      console.log('test', client, vehicle);
-
       const generarFactura = (factura: any) => {
         let subtotal = new Decimal(0);
 
@@ -51,20 +50,16 @@ export class FacturaService {
           );
           subtotal = subtotal.plus(totalPorServicio); // Sumar al subtotal
 
-          // Redondear el total por servicio a 2 decimales y guardarlo
-          detalle['total'] = totalPorServicio.toFixed(2); // Convertir a string con 2 decimales
-          // Redondear el precio unitario a 2 decimales
+          detalle['total'] = totalPorServicio.toFixed(2);
           detalle['precio_unitario'] = new Decimal(
             detalle.precio_unitario,
           ).toFixed(2); // Redondear y convertir a string
         });
 
-        // Calcular el IVA con Decimal
         const iva = subtotal.times(new Decimal(IVA)).toFixed(2); // Redondear a 2 decimales
         // Calcular el total a pagar
         const totalPagar = subtotal.plus(new Decimal(iva)).toFixed(2); // Redondear a 2 decimales
 
-        // Regresar los valores como números con precisión decimal
         return {
           cliente: client.data.id,
           vehicle: vehicle.data.id,
@@ -163,9 +158,11 @@ export class FacturaService {
         throw new NotFoundException('No se encontraron facturas');
       }
 
+      const formattedFactura = formatFacturaData(facturas);
+
       return {
         message: 'Facturas encontradas',
-        data: facturas,
+        data: formattedFactura,
         statusCode: 200,
       };
     } catch (error) {
@@ -195,9 +192,79 @@ export class FacturaService {
         throw new NotFoundException('Factura no encontrada');
       }
 
+      const formattedFactura = formatFacturaData(factura);
+
       return {
         message: 'Factura encontrada',
-        data: factura,
+        data: formattedFactura,
+        statusCode: 200,
+      };
+    } catch (error) {
+      const errorData = this.errors.handleError(error, this.entity);
+      return new HttpException(errorData, errorData.status);
+    }
+  }
+
+  async searchFactura(search: string, offset: string) {
+    const limit = 10;
+    const page = parseInt(offset, 10) || 1;
+    const skip = (page - 1) * limit;
+
+    const placa_vehiculo = search.toUpperCase();
+    let num_factura = parseInt(search);
+
+    if (isNaN(num_factura)) {
+      num_factura = undefined;
+    }
+
+    try {
+      const factura = await this.prisma.factura.findMany({
+        where: {
+          OR: [
+            {
+              num_factura: {
+                equals: num_factura,
+              },
+            },
+            {
+              Vehiculo: {
+                placa: placa_vehiculo,
+              },
+            },
+            {
+              cliente: {
+                datos: {
+                  cedula_identidad: search
+                },
+              },
+            }
+          ],
+        },
+        include: {
+          detalles: true,
+          cliente: {
+            include: {
+              datos: true,
+            },
+          },
+          Vehiculo: true,
+        },
+        skip,
+        take: limit,
+        orderBy: {
+          num_factura: "desc",
+        }
+      });
+
+      if (!factura || factura.length === 0) {
+        throw new NotFoundException('No se encontraron facturas');
+      }
+
+      const formattedFactura = formatFacturaData(factura);
+
+      return {
+        message: 'Facturas encontradas',
+        data: formattedFactura,
         statusCode: 200,
       };
     } catch (error) {
@@ -292,8 +359,10 @@ export class FacturaService {
         throw new NotFoundException('Factura no encontrada');
       }
 
+      const formatFactura = formatFacturaData(factura);
+
       return {
-        data: factura,
+        data: formatFactura,
         docType: this.entity,
       };
     } catch (error) {

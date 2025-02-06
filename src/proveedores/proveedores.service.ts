@@ -1,8 +1,4 @@
-import {
-  HttpException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateProveedoreDto } from './dto/create-proveedore.dto';
 import { UpdateProveedoreDto } from './dto/update-proveedore.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -94,6 +90,49 @@ export class ProveedoresService {
     }
   }
 
+  async searchProviders(search: string, offset: string) {
+    const limit = 10;
+    const page = parseInt(offset, 10) || 1;
+    const skip = (page - 1) * limit;
+
+    try {
+      let provider = await this.prisma.proveedores.findMany({
+        where: {
+          OR: [
+            {
+              nombre: {
+                contains: search,
+              },
+            },
+            {
+              rif: {
+                contains: search,
+              },
+            },
+          ],
+        },
+        skip,
+        take: limit,
+        orderBy: {
+          nombre: 'asc',
+        },
+      });
+
+      if (!provider || provider.length === 0) {
+        throw new NotFoundException('No se encontraron proveedores');
+      }
+
+      return {
+        message: 'Proveedores encontrados',
+        data: provider,
+        statusCode: 200,
+      };
+    } catch (error) {
+      const errorData = this.errors.handleError(error, this.entity);
+      return new HttpException(errorData, errorData.status);
+    }
+  }
+
   async findProviderByName(name: string, offset: string) {
     const limit = 10;
     const page = parseInt(offset, 10) || 1;
@@ -131,6 +170,11 @@ export class ProveedoresService {
   async updateProvider(id: string, updateProveedoreDto: UpdateProveedoreDto) {
     const { nombre, telefono, direccion, nota, rif } = updateProveedoreDto;
 
+    let rif_detalles;
+    if (rif) {
+      rif_detalles = 'J-' + rif;
+    }
+
     try {
       const provider = await this.prisma.proveedores.findUnique({
         where: {
@@ -146,11 +190,12 @@ export class ProveedoresService {
           nombre,
           telefono,
           rif,
-          rif_detalles: 'J-' + rif || undefined,
+          rif_detalles,
           direccion,
           nota,
         },
       });
+
 
       return {
         message: 'Proveedor actualizado correctamente',

@@ -5,6 +5,8 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { VehicleService } from 'src/vehicle/vehicle.service';
 import { Errors } from 'src/shared/errors.service';
 import { PdfService } from 'src/pdf/pdf.service';
+import { strict } from 'assert';
+import { console } from 'inspector';
 
 @Injectable()
 export class DiagnosticosService {
@@ -90,6 +92,7 @@ export class DiagnosticosService {
         },
         include: {
           revisiones: true,
+          vehiculo: true,
         },
       });
 
@@ -144,6 +147,61 @@ export class DiagnosticosService {
   //update(id: number, updateDiagnosticoDto: UpdateDiagnosticoDto) {
   //return `This action updates a #${id} diagnostico`;
   //}
+
+  //buscar por numero o placa
+  async searchDiagnostic(search: string, offset: string) {
+    const limit = 10;
+    const page = parseInt(offset, 10) || 1;
+    const skip = (page - 1) * limit;
+
+    const placa_vehiculo = search.toUpperCase();
+    let num_diagnostico = parseInt(search);
+
+    if (isNaN(num_diagnostico)) {
+      num_diagnostico = undefined;
+    }
+
+    try {
+      let diagnostic = await this.prisma.diagnostico.findMany({
+        where: {
+          OR: [
+            {
+              num_diagnostico: {
+                equals: num_diagnostico,
+              },
+            },
+            {
+              vehiculo: {
+                placa: placa_vehiculo,
+              },
+            },
+          ],
+        },
+        include: {
+          revisiones: true,
+          vehiculo: true
+        },
+        skip,
+        take: limit,
+        orderBy: {
+          num_diagnostico: 'desc',
+        }
+      });
+
+      if (!diagnostic || diagnostic.length === 0) {
+        throw new NotFoundException('No se encontraron diagnosticos');
+      }
+
+      return {
+        message: 'Diagnosticos encontrados',
+        data: diagnostic,
+        statusCode: 200,
+      };
+    } catch (error) {
+      const errorData = this.errors.handleError(error, this.entity);
+      return new HttpException(errorData, errorData.status);
+    }
+  }
 
   async findDiagnosticByVehicle(offset: string, placa: string) {
     const limit = 10;
@@ -250,7 +308,6 @@ export class DiagnosticosService {
           data: diagnostic,
           docType: this.entity,
         };
-
       } catch (error) {
         const errorData = this.errors.handleError(error, this.entity);
         return new HttpException(errorData, errorData.status);

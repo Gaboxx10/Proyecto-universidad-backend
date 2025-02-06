@@ -1,9 +1,20 @@
-import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { BcryptService } from 'src/shared/bcrypt.service';
 import { Errors } from 'src/shared/errors.service';
+
+export enum UserRole {
+  ASSISTANT = 'Asistente',
+  ADMIN = 'Administrador',
+  MECHANIC = 'Mecánico',
+}
 
 @Injectable()
 export class UsuarioService {
@@ -37,7 +48,8 @@ export class UsuarioService {
                 tipo_persona: this.tipo_persona,
                 nombres: data.nombres,
                 apellidos: data.apellidos,
-                cedula_identidad: 'V-' + data.cedula_identidad,
+                cedula_identidad: data.cedula_identidad,
+                cedula_id_detalles: "V-" + data.cedula_identidad,
                 telefono: data.telefono,
                 direccion: data.direccion,
                 email: data.email,
@@ -75,7 +87,7 @@ export class UsuarioService {
         },
         orderBy: {
           datos: {
-            cedula_identidad: 'asc',
+            nombres: 'asc'
           },
         },
       });
@@ -209,7 +221,37 @@ export class UsuarioService {
   }
 
   async updateUser(id: string, updateUsuarioDto: UpdateUsuarioDto) {
-    //TODO: VALIDACIONES Y HACER CAMBIO DE CONTRASEÑA E EMAIL
+    const {
+      nombres,
+      apellidos,
+      email,
+      cedula_identidad,
+      telefono,
+      direccion,
+      user_name,
+    } = updateUsuarioDto;
+
+    console.log(nombres, apellidos, email, cedula_identidad, telefono, direccion, user_name);
+
+    let cedula_id_detalles;
+    if (cedula_identidad) {
+      cedula_id_detalles = 'V-' + cedula_identidad;
+    }
+
+    let { contraseña, confirm_contraseña } = updateUsuarioDto;
+
+    if (contraseña && confirm_contraseña) {
+      if (contraseña !== confirm_contraseña) {
+        return new BadRequestException('Las contraseñas no coinciden');
+      }
+      const hashedPassword = await this.bcryptService.hashPassword(contraseña);
+      contraseña = hashedPassword;
+    } else if (contraseña && !confirm_contraseña) {
+      return new BadRequestException('Las contraseñas no coinciden');
+    } else if (!contraseña && confirm_contraseña) {
+      return new BadRequestException('Las contraseñas no coinciden');
+    }
+
     try {
       const result = await this.prisma.$transaction(async (prisma) => {
         const user = await prisma.usuario.findUnique({
@@ -234,17 +276,18 @@ export class UsuarioService {
             contraseña: updateUsuarioDto.contraseña,
             datos: {
               update: {
-                nombres: updateUsuarioDto.nombres,
-                apellidos: updateUsuarioDto.apellidos,
-                cedula_identidad: updateUsuarioDto.cedula_identidad,
-                telefono: updateUsuarioDto.telefono,
-                email: updateUsuarioDto.email,
-                direccion: updateUsuarioDto.direccion,
+                nombres: nombres,
+                apellidos: apellidos,
+                cedula_identidad: cedula_identidad,
+                cedula_id_detalles,
+                telefono: telefono,
+                email: email,
+                direccion: direccion,
               },
             },
           },
         });
-        
+
         const updateData = await prisma.usuario.findUnique({
           where: {
             id,
@@ -254,9 +297,9 @@ export class UsuarioService {
           },
         });
 
-        return updateData
+        return updateData;
       });
-      
+
       return {
         message: 'Usuario actualizado exitosamente',
         data: result,
@@ -275,7 +318,7 @@ export class UsuarioService {
           id,
         },
         include: {
-          datos: true
+          datos: true,
         },
       });
 

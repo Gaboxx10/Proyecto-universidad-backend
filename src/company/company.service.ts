@@ -14,11 +14,7 @@ export class CompanyService {
 
   async findCompany() {
     try {
-      const company = await this.prisma.empresa.findUnique({
-        where: {
-          id: 1,
-        },
-      });
+      const company = await this.prisma.empresa.findFirst()
       return company;
     } catch (error) {
       console.log(error);
@@ -27,7 +23,12 @@ export class CompanyService {
 
   async updateInfo(updateCompanyDto: UpdateCompanyDto) {
 
-    const { nombre, direccion, telefono, rif, email, iva, razon_social } = updateCompanyDto;
+    const { nombre, direccion, telefono, rif, email, iva, razon_social, moneda } = updateCompanyDto;
+
+    let rif_detalles;
+    if (rif) {
+      rif_detalles = "J-" + rif;
+    }
 
     try {
 
@@ -41,14 +42,15 @@ export class CompanyService {
           id: 1,
         },
         data: {
-          nombre: nombre || undefined,
-          direccion: direccion || undefined,
-          telefono: telefono || undefined,
-          rif: rif || undefined,
-          rif_detalles: "J-" + rif || undefined,
-          email: email || undefined,
-          iva: ivaValue || undefined,
-          razon_social: razon_social || undefined,
+          nombre,
+          direccion,
+          telefono,
+          rif,
+          rif_detalles,
+          email,
+          iva: ivaValue,
+          razon_social,
+          moneda
         },
       });
 

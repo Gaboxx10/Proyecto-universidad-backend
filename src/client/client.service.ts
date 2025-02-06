@@ -88,6 +88,11 @@ export class ClientService {
         include: {
           datos: true,
         },
+        orderBy: {
+          datos: {
+            nombres: 'asc',
+          },
+        },
       });
 
       if (!clients || clients.length === 0) {
@@ -111,6 +116,7 @@ export class ClientService {
         where: { id },
         include: {
           datos: true,
+          //vehiculos: true,
         },
       });
 
@@ -128,34 +134,40 @@ export class ClientService {
     }
   }
 
-  async findClientByName(name: string, offset: string) {
+  async searchClient(search: string, offset: string) {
     const limit = 10;
     const page = parseInt(offset, 10) || 1;
     const skip = (page - 1) * limit;
+
+    const searchTerm = search;
+
     try {
-      const clients = await this.prisma.cliente.findMany({
+      const client = await this.prisma.cliente.findMany({
         where: {
           datos: {
             OR: [
               {
-                nombres: {
-                  contains: name,
-                },
-                apellidos: {
-                  contains: name,
-                },
                 cedula_identidad: {
-                  contains: name,
+                  contains: searchTerm,
                 },
               },
-            ],
-          },
+              {
+                nombres: {
+                  contains: searchTerm,
+                },
+              },
+              {
+                apellidos: {
+                  contains: searchTerm,
+                },
+              }]
+          } 
         },
-        skip,
-        take: limit,
         include: {
           datos: true,
         },
+        skip,
+        take: limit,
         orderBy: {
           datos: {
             nombres: 'asc',
@@ -163,13 +175,13 @@ export class ClientService {
         },
       });
 
-      if (!clients || clients.length === 0) {
-        throw new HttpException('No se encontraron clientes', 404);
+      if (!client || client.length === 0) {
+        throw new NotFoundException('No se encontraron clientes');
       }
 
       return {
-        message: 'Clientes encontrados exitosamente',
-        data: clients,
+        message: 'Clientes encontrados',
+        data: client,
         statusCode: 200,
       };
     } catch (error) {

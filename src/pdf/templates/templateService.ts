@@ -470,7 +470,7 @@ export class TemplateService {
           text: [
             { text: 'Orden Nº: ', bold: true, color: '#7B1FA2' }, // Morado
             `${ordenData.num_orden}  |  `,
-            { text: 'Fecha Creación: ', bold: true, color: '#7B1FA2' }, // Morado
+            { text: 'Fecha: ', bold: true, color: '#7B1FA2' }, // Morado
             `${formattedCreationDate}`,
           ],
         },
@@ -650,6 +650,261 @@ export class TemplateService {
           bold: true,
           color: '#fff',
           background: '#7B1FA2', // Morado
+          alignment: 'center',
+        },
+        body: {
+          fontSize: 12,
+          margin: [0, 5, 0, 5],
+        },
+        footerText: {
+          fontSize: 10,
+          color: '#333333',
+        },
+      },
+    };
+
+    return docDefinition;
+  }
+
+  async generatePresupuestoDef(data: any): Promise<TDocumentDefinitions> {
+    const company = await this.getCompanyData();
+
+    // Usamos `f_emision` para la fecha de creación
+    const formattedCreationDate = new Date(data.f_emision).toLocaleDateString(
+      'es-ES',
+    );
+    const formattedValidityDate = formattedCreationDate;
+
+    // Si no hay un campo `f_entrega_estimada`, agregamos una fecha ficticia de entrega (o puedes ajustar esto)
+    const formattedDeliveryDate = new Date().toLocaleDateString('es-ES'); // o una fecha estimada
+
+    // Si no existe nota adicional, establecemos un valor predeterminado
+    data.nota_adicional = data.nota_adicional || 'No hay nota adicional';
+
+    const docDefinition: TDocumentDefinitions = {
+      content: [
+        {
+          text: `Presupuesto`,
+          style: 'header',
+          alignment: 'left',
+        },
+        {
+          text: [
+            {
+              text: `${company.nombre} ${company.razon_social} | ${company.rif_detalles}\n`,
+              color: '#333333',
+            },
+            { text: `${company.direccion}\n`, color: '#333333' },
+            { text: `${company.email}\n`, color: '#333333' },
+            { text: `${company.telefono}\n`, color: '#333333' },
+          ],
+          style: 'infoBox',
+          alignment: 'left',
+        },
+        {
+          style: 'subheader',
+          alignment: 'center',
+          text: [
+            { text: 'Presupuesto Nº: ', bold: true, color: '#388E3C' }, // Verde
+            `${data.num_presupuesto}  |  `,
+            { text: 'Fecha: ', bold: true, color: '#388E3C' }, // Verde
+            `${formattedCreationDate}`,
+          ],
+        },
+
+        {
+          columns: [
+            {
+              text: 'Cliente',
+              style: 'infoTitle',
+            },
+            {
+              text: 'Vehículo',
+              style: 'infoTitle',
+            },
+          ],
+        },
+        {
+          columns: [
+            {
+              text: [
+                { text: 'Nombre: ', bold: true },
+                `${data.vehiculo.cliente.datos.nombres} ${data.vehiculo.cliente.datos.apellidos}\n`,
+                { text: 'Cédula/RIF: ', bold: true },
+                `${data.vehiculo.cliente.datos.cedula_identidad}\n`,
+                { text: 'Teléfono: ', bold: true },
+                `${data.vehiculo.cliente.datos.telefono}\n`,
+                { text: 'Dirección: ', bold: true },
+                `${data.vehiculo.cliente.datos.direccion}`,
+              ],
+              style: 'infoBox',
+            },
+            {
+              text: [
+                { text: 'Placa: ', bold: true },
+                `${data.vehiculo.placa}\n`,
+                { text: 'Marca: ', bold: true },
+                `${data.vehiculo.marca}\n`,
+                { text: 'Modelo: ', bold: true },
+                `${data.vehiculo.modelo}\n`,
+                { text: 'Año: ', bold: true },
+                `${data.vehiculo.año.toString()}\n`,
+                { text: 'Color: ', bold: true },
+                `${data.vehiculo.color}\n`,
+                { text: 'Kilometraje: ', bold: true },
+                `${data.vehiculo.kilometraje.toString()}`,
+              ],
+              style: 'infoBox',
+            },
+          ],
+        },
+        {
+          text: [
+            {
+              text: 'Fecha de Emisión: ',
+              bold: true,
+              color: '#388E3C',
+              fontSize: 14,
+            },
+            `${formattedCreationDate}  |  `,
+            {
+              text: 'Valido hasta: ',
+              bold: true,
+              color: '#388E3C',
+              fontSize: 14,
+            },
+            `${formattedCreationDate}`,
+          ],
+          style: 'infoBox',
+          alignment: 'center',
+          fontSize: 14,
+          margin: [0, 20],
+        },
+        {
+          table: {
+            widths: ['*', '*', '*', '*'],
+            body: [
+              [
+                {
+                  text: 'Descripción',
+                  alignment: 'center',
+                  bold: true,
+                  color: '#000000',
+                },
+                {
+                  text: 'Cantidad',
+                  alignment: 'center',
+                  bold: true,
+                  color: '#000000',
+                },
+                {
+                  text: 'Precio Unitario',
+                  alignment: 'center',
+                  bold: true,
+                  color: '#000000',
+                },
+                {
+                  text: 'Total',
+                  alignment: 'center',
+                  bold: true,
+                  color: '#000000',
+                },
+              ],
+              ...data.detalles.map((detalle) => {
+                return [
+                  detalle.descripcion || 'No disponible',
+                  {
+                    text:  detalle.cantidad.toString() || 'No disponible',
+                    alignment: 'center',
+                  },
+                  {
+                    text: `${company.moneda} ${parseFloat(detalle.precio_unitario).toFixed(2)}` ||
+                      'No disponible',
+                    alignment: 'center',
+                  },
+                  {
+                    text:
+                      `${company.moneda} ${parseFloat(detalle.importe).toFixed(2)}` ||
+                      'No disponible',
+                    alignment: 'center',
+                  },
+                ];
+              }),
+            ],
+          },
+          layout: 'lightHorizontalLines',
+        },
+        {
+          columns: [
+            {
+              text: [
+                { text: 'Total a Pagar: ', bold: true, color: '#388E3C' },
+                `${company.moneda} ${parseFloat(data.total_pagar).toFixed(2)}`,
+              ],
+              style: 'tableData',
+              alignment: 'right',
+              marginTop: 20
+            },
+          ],
+        },
+      ],
+
+      footer: {
+        columns: [
+          {
+            text: `${company.nombre} ${company.razon_social} | ${company.rif_detalles} | ${company.telefono}`,
+            alignment: 'left',
+            style: 'footerText',
+          },
+          {
+            text: `${company.email} | ${company.direccion}`,
+            alignment: 'right',
+            style: 'footerText',
+          },
+        ],
+        margin: [20, 10],
+      },
+      styles: {
+        header: {
+          fontSize: 20,
+          bold: true,
+          color: '#388E3C', // Verde
+          margin: [0, 20, 0, 10],
+        },
+        title: {
+          fontSize: 18,
+          bold: true,
+          color: '#333333',
+          margin: [0, 10, 0, 5],
+        },
+        subheader: {
+          fontSize: 14,
+          color: '#333333',
+          margin: [0, 0, 0, 20],
+        },
+        infoTitle: {
+          fontSize: 15,
+          bold: true,
+          color: '#388E3C', // Verde
+          margin: [0, 0, 0, 5],
+        },
+        infoBox: {
+          fontSize: 10,
+          color: '#333333',
+          margin: [0, 0, 0, 10],
+          lineHeight: 1.5,
+        },
+        sectionHeader: {
+          fontSize: 16,
+          bold: true,
+          color: '#388E3C', // Verde
+          margin: [0, 20, 0, 5],
+        },
+        tableHeader: {
+          fontSize: 13,
+          bold: true,
+          color: '#fff',
+          background: '#388E3C', // Verde
           alignment: 'center',
         },
         body: {

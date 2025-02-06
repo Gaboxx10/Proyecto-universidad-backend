@@ -120,11 +120,11 @@ export class OrdenesTrabajoService {
           detalles: true,
           vehiculo: {
             include: {
-              cliente:{
-                include:{
-                  datos:true
-                }
-              }
+              cliente: {
+                include: {
+                  datos: true,
+                },
+              },
             },
           },
         },
@@ -188,6 +188,60 @@ export class OrdenesTrabajoService {
     }
   }
 
+  async searchOrden(search: string, offset: string) {
+    const limit = 10;
+    const page = parseInt(offset, 10) || 1;
+    const skip = (page - 1) * limit;
+
+    const placa_vehiculo = search.toUpperCase();
+    let num_orden = parseInt(search);
+
+    if (isNaN(num_orden)) {
+      num_orden = undefined;
+    }
+
+    try {
+      const orden = await this.prisma.ordenTrabajo.findMany({
+        where: {
+          OR: [
+            {
+              num_orden: {
+                equals: num_orden,
+              },
+            },
+            {
+              vehiculo: {
+                placa: placa_vehiculo,
+              },
+            }
+          ],
+        },
+        include: {
+          detalles: true,
+          vehiculo: true,
+        },
+        skip,
+        take: limit,
+        orderBy: {
+          num_orden: 'desc',
+        },
+      });
+
+      if (!orden || orden.length === 0) {
+        throw new NotFoundException('No se encontraron ordenes de trabajo');
+      }
+
+      return {
+        message: 'Ordenes de trabajo encontradas',
+        data: orden,
+        statusCode: 200,
+      };
+    } catch (error) {
+      const errorData = this.errors.handleError(error, this.entity);
+      return new HttpException(errorData, errorData.status);
+    }
+  }
+
   //update(id: number, updateOrdenesTrabajoDto: UpdateOrdenesTrabajoDto) {
   // return `This action updates a #${id} ordenesTrabajo`;
   //}
@@ -240,15 +294,14 @@ export class OrdenesTrabajoService {
         },
       });
 
-      if(!orden) {
+      if (!orden) {
         throw new NotFoundException('Orden de trabajo no encontrada');
       }
 
       return {
         data: orden,
-        docType: this.entity
+        docType: this.entity,
       };
-
     } catch (error) {
       const errorData = this.errors.handleError(error, this.entity);
       return new HttpException(errorData, errorData.status);
