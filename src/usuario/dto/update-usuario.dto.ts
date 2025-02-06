@@ -81,31 +81,40 @@ export class UpdateUsuarioDto {
 
   @IsString({ message: 'El campo "contraseña" debe ser una cadena de texto.' })
   @MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres.' })
-  @MaxLength(20, { message: 'La contraseña no puede exceder los 20 caracteres.' })
+  @MaxLength(20, {
+    message: 'La contraseña no puede exceder los 20 caracteres.',
+  })
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, {
-    message: 'La contraseña debe contener al menos una letra mayúscula, una letra minúscula y un número.',
+    message:
+      'La contraseña debe contener al menos una letra mayúscula, una letra minúscula y un número.',
   })
   @IsOptional({ message: 'El campo "contraseña" es obligatorio.' })
   contraseña: string;
 
-  @IsString({ message: 'El campo "confirm_contraseña" debe ser una cadena de texto.' })
-  @MinLength(8, { message: 'La confirmación de la contraseña debe tener al menos 8 caracteres.' })
-  @MaxLength(20, { message: 'La confirmación de la contraseña no puede exceder los 20 caracteres.' })
+  @IsString({
+    message: 'El campo "confirm_contraseña" debe ser una cadena de texto.',
+  })
+  @MinLength(8, {
+    message:
+      'La confirmación de la contraseña debe tener al menos 8 caracteres.',
+  })
+  @MaxLength(20, {
+    message:
+      'La confirmación de la contraseña no puede exceder los 20 caracteres.',
+  })
   @IsOptional({ message: 'El campo "confirm_contraseña" es obligatorio.' })
-   // Validación para comprobar que las contraseñas coincidan
-   @ValidateIf((o) => o.contraseña && o.confirm_contraseña)
-   @Matches(
-     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/,
-     {
-       message: 'La confirmación de la contraseña debe coincidir con la contraseña.',
-     }
-   )
-   @IsOptional({ message: 'La confirmación de la contraseña es obligatoria.' })
+  // Validación para comprobar que las contraseñas coincidan
+  @ValidateIf((o) => o.contraseña && o.confirm_contraseña)
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, {
+    message:
+      'La confirmación de la contraseña debe coincidir con la contraseña.',
+  })
+  @IsOptional({ message: 'La confirmación de la contraseña es obligatoria.' })
   @ValidateIf((o) => o.contraseña !== undefined)
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, {
-    message: 'La confirmación de la contraseña debe contener al menos una letra mayúscula, una letra minúscula y un número.',
+    message:
+      'La confirmación de la contraseña debe contener al menos una letra mayúscula, una letra minúscula y un número.',
   })
   confirm_contraseña: string;
-
 
 }

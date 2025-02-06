@@ -1,25 +1,38 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req, UseGuards } from '@nestjs/common';
 import { ProfileService } from './profile.service';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
+import { GetUser } from './decorators/user-data.decorator';
+import { Rol } from 'src/constants/constants';
 
-@Controller('account')
+export interface User {
+  userId: string;  
+  username: string; 
+  rol: Rol;
+}
+
+
+@Controller('profile')
+@UseGuards(JwtAuthGuard)
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
-  @Post()
-  @Get("/profile/:id")
-  getProfile(@Param('id') id: string, @Req() req: Request) {
-    //return this.profileService.findAll();
+  @Get("/me")
+  async getProfile(@GetUser() user: User) {
+    return await this.profileService.getProfile(user.userId);
   }
 
-  @Patch('/profile/:id/update')
-  update(@Param('id') id: string, @Body() updateProfileDto: UpdateProfileDto) {
-    //return this.profileService.update(+id, updateProfileDto);
+  @Patch('/me/update')
+  async updateProfile(@GetUser() user: User, @Body() updateProfileDto: UpdateProfileDto) {
+    return await this.profileService.updateProfile(user.userId, updateProfileDto);
   }
 
   @Delete('/profile/:id/delete')
-  remove(@Param('id') id: string) {
-    //return this.profileService.remove(+id);
+  deleteProfile(@Param('id') id: string) {
+    return this.profileService.deleteUser(+id);
   }
+
+
+  
 }

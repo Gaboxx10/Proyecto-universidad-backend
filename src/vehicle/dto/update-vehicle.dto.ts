@@ -47,6 +47,13 @@ export class UpdateVehicleDto {
   })
   cedula_cliente: string;
 
+  @IsString()
+  @IsOptional()
+  @Matches(
+    /^(REGISTRADO|EN DIAGNOSTICO|EN REPARACION|EN MANTENIMIENTO|EN ESPERA|REPARADO|NULL|NO REPARABLE|ENTREGADO)$/,
+  )
+  estado: string;
+
   @ValidateIf(
     (o) =>
       !o.placa &&
@@ -56,7 +63,8 @@ export class UpdateVehicleDto {
       !o.tipo &&
       !o.año &&
       !o.kilometraje &&
-      !o.cedula_cliente,
+      !o.cedula_cliente &&
+      !o.estado,
   )
   @IsDefined({
     message:

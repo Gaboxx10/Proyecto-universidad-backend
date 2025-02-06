@@ -245,7 +245,7 @@ export class VehicleService {
     }
   }
 
-  async updateVehicle(id: string, updateVehicleDto: any) {
+  async updateVehicle(id: string, updateVehicleDto: UpdateVehicleDto) {
     const {
       placa,
       marca,

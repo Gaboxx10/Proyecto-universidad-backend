@@ -1,20 +1,48 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UsuarioService } from 'src/usuario/usuario.service';
+import { Errors } from 'src/shared/errors.service';
 
 @Injectable()
 export class ProfileService {
+  constructor(
+    private readonly userService: UsuarioService,
+    private readonly errors: Errors,
+  ) {}
 
-  findAll() {
-    return `This action returns all profile`;
+  private entity = 'profile';
+
+  async getProfile(id: string) {
+    try {
+      const user = await this.userService.findUserById(id);
+
+      if (!user || user instanceof Error) {
+        throw new NotFoundException('No se ha encontrado el usuario');
+      }
+
+      return user.data;
+    } catch (error) {
+      const errorData = this.errors.handleError(error, this.entity);
+      return new HttpException(errorData, errorData.status);
+    }
   }
 
-  async findMyPerfilById(id: string) {
-    return `This action returns a #${id} profile`;
-  }
+  async updateProfile(id: string, updateProfileDto: UpdateProfileDto) {
+    try {
+      const profile = await this.getProfile(id);
 
-  async updateUser(id: number, updateProfileDto: UpdateProfileDto) {
-    return `This action updates a #${id} profile`;
+      if (!profile || profile instanceof Error) {
+        throw new NotFoundException('No se ha encontrado el usuario');
+      }
+
+      const updatedProfile = await this.userService.updateUser(id, updateProfileDto);
+      return updatedProfile;
+
+    } catch (error) {
+      const errorData = this.errors.handleError(error, this.entity);
+      return new HttpException(errorData, errorData.status);
+    }
   }
 
   deleteUser(id: number) {

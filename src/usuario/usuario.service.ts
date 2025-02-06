@@ -231,8 +231,6 @@ export class UsuarioService {
       user_name,
     } = updateUsuarioDto;
 
-    console.log(nombres, apellidos, email, cedula_identidad, telefono, direccion, user_name);
-
     let cedula_id_detalles;
     if (cedula_identidad) {
       cedula_id_detalles = 'V-' + cedula_identidad;

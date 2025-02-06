@@ -81,7 +81,7 @@ export class CreateUsuarioDto {
   confirm_contraseña: string;
 
   @IsString({ message: 'El campo "rol" debe ser una cadena de texto.' })
-  @Matches(/^(ADMIN|ASISTENTE|MECANICO)$/, {
+  @Matches(/^(ROLE|ASISTENTE|MECANICO)$/, {
     message: 'El rol debe ser ASISTENTE, ADMIN o MECANICO.',
   })
   @IsNotEmpty({ message: 'El campo "rol" es obligatorio.' })
