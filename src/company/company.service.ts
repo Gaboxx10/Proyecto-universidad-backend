@@ -2,6 +2,7 @@ import { Injectable, HttpException } from '@nestjs/common';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Errors } from 'src/shared/errors.service';
+import { Modules } from 'src/constants/constants';
 
 @Injectable()
 export class CompanyService {
@@ -10,7 +11,7 @@ export class CompanyService {
     private errors: Errors,
   ) {}
 
-  private entity = 'empresa';
+  private entity = Modules.empresa;
 
   async findCompany() {
     try {

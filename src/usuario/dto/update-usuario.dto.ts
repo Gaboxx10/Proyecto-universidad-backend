@@ -103,7 +103,7 @@ export class UpdateUsuarioDto {
       'La confirmación de la contraseña no puede exceder los 20 caracteres.',
   })
   @IsOptional({ message: 'El campo "confirm_contraseña" es obligatorio.' })
-  // Validación para comprobar que las contraseñas coincidan
+
   @ValidateIf((o) => o.contraseña && o.confirm_contraseña)
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, {
     message:
@@ -117,4 +117,10 @@ export class UpdateUsuarioDto {
   })
   confirm_contraseña: string;
 
+  @IsString({ message: 'El campo "rol" debe ser una cadena de texto.' })
+  @Matches(/^(ASISTENTE|MECANICO)$/, {
+    message: 'El rol debe ser ASISTENTE O MECANICO.',
+  })
+  @IsOptional()
+  rol: string;
 }

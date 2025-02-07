@@ -22,3 +22,26 @@ export enum EstadoReparacion {
   ENTREGADO = 'ENTREGADO',
 }
 
+export enum Modules {
+  cliente = 'cliente',
+  empresa = 'empresa',
+  dashboard = "dashboard",
+  diagnostico = "diagnostico",
+  factura = "factura",
+  ordenTrabajo = "orden-trabajo",
+  presupuesto = "presupuesto",
+  profile = "profile",
+  usuario = "usuario",
+  proveedores = "proveedores",
+  vehiculo = "vehiculo"
+}
+
+export enum TipoPersona {
+  CLIENTE = 'CLIENTE',
+  USUARIO = 'USUARIO',
+}
+
+export enum TipoCliente {
+  PERSONA = 'PERSONA_NATURAL',
+  EMPRESA = 'EMPRESA',
+}

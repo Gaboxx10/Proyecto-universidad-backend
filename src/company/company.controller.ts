@@ -11,13 +11,13 @@ import { RolesGuard } from 'src/shared/guards/roles-auth.guard';
 export class CompanyController {
   constructor(private readonly companyService: CompanyService) {}
 
-  @Get('/info')
+  @Get('/')
   @Roles(Rol.ADMIN)
   findOCompanyInfo() {
     return this.companyService.findCompany();
   }
 
-  @Patch('/info/update')
+  @Patch('/update')
   @Roles(Rol.ADMIN)
   update(@Param('id') id: string, @Body() updateCompanyDto: UpdateCompanyDto) {
     return this.companyService.updateInfo(updateCompanyDto);

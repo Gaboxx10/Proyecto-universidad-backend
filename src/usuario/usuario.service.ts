@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   HttpException,
   Injectable,
   NotFoundException,
@@ -9,6 +10,7 @@ import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { BcryptService } from 'src/shared/bcrypt.service';
 import { Errors } from 'src/shared/errors.service';
+import { Modules, Rol, TipoPersona } from 'src/constants/constants';
 
 export enum UserRole {
   ASSISTANT = 'Asistente',
@@ -24,8 +26,8 @@ export class UsuarioService {
     private errors: Errors,
   ) {}
 
-  private entity = 'usuario';
-  private tipo_persona = 'USUARIO';
+  private entity = Modules.usuario;
+  private tipo_persona = TipoPersona.USUARIO;
 
   async createUser(data: CreateUsuarioDto) {
     try {
@@ -49,7 +51,7 @@ export class UsuarioService {
                 nombres: data.nombres,
                 apellidos: data.apellidos,
                 cedula_identidad: data.cedula_identidad,
-                cedula_id_detalles: "V-" + data.cedula_identidad,
+                cedula_id_detalles: 'V-' + data.cedula_identidad,
                 telefono: data.telefono,
                 direccion: data.direccion,
                 email: data.email,
@@ -87,7 +89,7 @@ export class UsuarioService {
         },
         orderBy: {
           datos: {
-            nombres: 'asc'
+            nombres: 'asc',
           },
         },
       });
@@ -150,6 +152,70 @@ export class UsuarioService {
       return {
         message: 'Usuario encontrado correctamente',
         data: user,
+        statusCode: 200,
+      };
+    } catch (error) {
+      const errorData = this.errors.handleError(error, this.entity);
+      return new HttpException(errorData, errorData.status);
+    }
+  }
+
+  async searchUser(search: string, offset: string) {
+    const limit = 10;
+    const page = parseInt(offset, 10) || 1;
+    const skip = (page - 1) * limit;
+
+    try {
+      const users = await this.prisma.usuario.findMany({
+        where: {
+          OR: [
+            {
+              datos: {
+                nombres: {
+                  contains: search,
+                },
+              },
+            },
+            {
+              datos: {
+                apellidos: {
+                  contains: search,
+                },
+              },
+            },
+            {
+              datos: {
+                cedula_identidad: {
+                  contains: search,
+                },
+              },
+            },
+            {
+              user_name: {
+                contains: search,
+              },
+            },
+          ],
+        },
+        skip,
+        take: limit,
+        include: {
+          datos: true,
+        },
+        orderBy: {
+          datos: {
+            nombres: 'asc',
+          },
+        },
+      });
+
+      if (!users || users.length === 0) {
+        throw new NotFoundException('No se encontraron usuarios');
+      }
+
+      return {
+        message: 'Usuarios encontrados correctamente',
+        data: users,
         statusCode: 200,
       };
     } catch (error) {
@@ -229,7 +295,22 @@ export class UsuarioService {
       telefono,
       direccion,
       user_name,
+      rol,
     } = updateUsuarioDto;
+
+    const user = await this.prisma.usuario.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    if (user.rol === Rol.ADMIN) {
+      throw new ForbiddenException(
+        'No puedes modificar el rol del Administrador del sistema',
+      );
+    }
 
     let cedula_id_detalles;
     if (cedula_identidad) {
@@ -238,11 +319,13 @@ export class UsuarioService {
 
     let { contraseña, confirm_contraseña } = updateUsuarioDto;
 
+    let hashedPassword;
+
     if (contraseña && confirm_contraseña) {
       if (contraseña !== confirm_contraseña) {
         return new BadRequestException('Las contraseñas no coinciden');
       }
-      const hashedPassword = await this.bcryptService.hashPassword(contraseña);
+      hashedPassword = await this.bcryptService.hashPassword(contraseña);
       contraseña = hashedPassword;
     } else if (contraseña && !confirm_contraseña) {
       return new BadRequestException('Las contraseñas no coinciden');
@@ -270,17 +353,18 @@ export class UsuarioService {
             id,
           },
           data: {
-            user_name: updateUsuarioDto.user_name,
-            contraseña: updateUsuarioDto.contraseña,
+            user_name,
+            contraseña: hashedPassword,
+            rol,
             datos: {
               update: {
-                nombres: nombres,
-                apellidos: apellidos,
-                cedula_identidad: cedula_identidad,
+                nombres,
+                apellidos,
+                cedula_identidad,
                 cedula_id_detalles,
-                telefono: telefono,
-                email: email,
-                direccion: direccion,
+                telefono,
+                email,
+                direccion,
               },
             },
           },
@@ -322,6 +406,12 @@ export class UsuarioService {
 
       if (!user) {
         return new NotFoundException('Usuario no encontrado');
+      }
+
+      if (user.rol === Rol.ADMIN) {
+        return new ForbiddenException(
+          'No puedes eliminar al Administrador del sistema.',
+        );
       }
 
       const personaId = user.datos.id;

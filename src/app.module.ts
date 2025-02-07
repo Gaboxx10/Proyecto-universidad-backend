@@ -15,9 +15,10 @@ import { CompanyModule } from './company/company.module';
 import { PdfModule } from './pdf/pdf.module';
 import { FacturaModule } from './factura/factura.module';
 import { ProfileModule } from './profile/profile.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
-  imports: [PrismaModule, UsuarioModule, SharedModule, AuthModule, DiagnosticosModule, ClientModule, VehicleModule, PresupuestoModule, OrdenesTrabajoModule, ProveedoresModule, CompanyModule, PdfModule, FacturaModule, ProfileModule],
+  imports: [PrismaModule, UsuarioModule, SharedModule, AuthModule, DiagnosticosModule, ClientModule, VehicleModule, PresupuestoModule, OrdenesTrabajoModule, ProveedoresModule, CompanyModule, PdfModule, FacturaModule, ProfileModule, DashboardModule],
   controllers: [],
   providers: [],
 })

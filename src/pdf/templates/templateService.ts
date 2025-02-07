@@ -547,6 +547,12 @@ export class TemplateService {
                   color: '#000000',
                 },
                 {
+                  text: 'Solución',
+                  alignment: 'center',
+                  bold: true,
+                  color: '#000000',
+                },
+                {
                   text: 'Descripción',
                   alignment: 'center',
                   bold: true,
@@ -558,22 +564,16 @@ export class TemplateService {
                   bold: true,
                   color: '#000000',
                 },
-                {
-                  text: 'Solución',
-                  alignment: 'center',
-                  bold: true,
-                  color: '#000000',
-                },
               ],
               ...ordenData.detalles.map((detalle) => {
                 return [
                   detalle.observacion || 'No disponible',
+                  detalle.solucion || 'No disponible',
                   detalle.descripcion || 'No disponible',
                   {
                     text: detalle.cantidad.toString() || 'No disponible',
                     alignment: 'center',
                   },
-                  detalle.solucion || 'No disponible',
                 ];
               }),
             ],

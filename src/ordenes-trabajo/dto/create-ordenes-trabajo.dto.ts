@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsNotEmpty,
   IsOptional,
@@ -7,8 +8,9 @@ import {
   IsNumber,
   IsInt,
   Min,
-  Max,
-  Matches
+  ArrayNotEmpty,
+  ValidateNested,
+  Matches,
 } from 'class-validator';
 
 export class DetalleOrdenDto {
@@ -39,19 +41,28 @@ export class DetalleOrdenDto {
 export class CreateOrdenesTrabajoDto {
   @IsString({ message: 'La placa del vehículo debe ser una cadena de texto.' })
   @IsNotEmpty({ message: 'La placa del vehículo es obligatoria.' })
-  @Matches(/^[A-Za-z0-9]+$/, { message: 'La placa solo debe contener letras y números.' })
+  @Matches(/^[A-Za-z0-9]+$/, {
+    message: 'La placa solo debe contener letras y números.',
+  })
   placa_vehiculo: string;
 
   @IsOptional()
-  @IsDateString({}, { message: 'La fecha de entrega estimada debe ser una fecha válida.' })
+  @IsDateString(
+    {},
+    { message: 'La fecha de entrega estimada debe ser una fecha válida.' },
+  )
   f_entrega_estimada?: string;
 
-  @IsArray({ message: 'Los detalles deben ser un array de objetos.' })
-  @IsNotEmpty({ message: 'Debe haber al menos un detalle en el presupuesto.' })
+  @IsArray({ message: 'Las observaciones deben ser un array.' })
+  @ArrayNotEmpty({ message: 'Debe haber al menos una observación.' })
+  @ValidateNested({ each: true, message: 'Cada observación debe ser válida.' })
+  @Type(() => DetalleOrdenDto)
   detalles: DetalleOrdenDto[];
 
   @IsOptional()
   @IsString({ message: 'La nota adicional debe ser una cadena de texto.' })
-  @IsNotEmpty({ message: 'La nota adicional debe tener un valor si se proporciona.' })
+  @IsNotEmpty({
+    message: 'La nota adicional debe tener un valor si se proporciona.',
+  })
   nota_adicional?: string;
 }

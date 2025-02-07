@@ -12,6 +12,7 @@ import Decimal from 'decimal.js';
 import { Errors } from 'src/shared/errors.service';
 import { Pay } from './factura.controller';
 import { formatFacturaData } from './utils/format-factura.util';
+import { Modules } from 'src/constants/constants';
 
 @Injectable()
 export class FacturaService {
@@ -22,7 +23,7 @@ export class FacturaService {
     private errors: Errors,
   ) {}
 
-  private entity = 'factura';
+  private entity = Modules.factura;
 
   async createFactura(createClientDto: CreateFacturaDto) {
     const { cedula_cliente, placa } = createClientDto;
@@ -210,7 +211,11 @@ export class FacturaService {
     const page = parseInt(offset, 10) || 1;
     const skip = (page - 1) * limit;
 
-    const placa_vehiculo = search.toUpperCase();
+  
+    let placa_vehiculo
+    if(search){
+     placa_vehiculo = search.toUpperCase();
+    }
     let num_factura = parseInt(search);
 
     if (isNaN(num_factura)) {

@@ -17,6 +17,7 @@ export class SeedService {
     }
 
     const hashedPassword = await this.bcryptService.hashPassword(defaultData.user.password);
+    const hashedPasswordAux = await this.bcryptService.hashPassword(defaultData.aux.password);
 
     const persona = await this.prisma.persona.create({
       data: {
@@ -32,6 +33,25 @@ export class SeedService {
             user_name: defaultData.user.user_name,
             contraseña: hashedPassword,
             rol: defaultData.user.role,
+          },
+        }
+      },
+    });
+
+    const aux = await this.prisma.persona.create({
+      data: {
+        nombres: defaultData.aux.nombres,
+        apellidos: defaultData.aux.apellidos,
+        email: defaultData.aux.email,
+        cedula_identidad: defaultData.aux.cedula_identidad,
+        telefono: defaultData.aux.telefono,
+        direccion: defaultData.aux.direccion,
+        tipo_persona: defaultData.aux.tipo_persona,
+        usuario: {
+          create: {
+            user_name: defaultData.aux.user_name,
+            contraseña: hashedPasswordAux,
+            rol: defaultData.aux.role,
           },
         }
       },

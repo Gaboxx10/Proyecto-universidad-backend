@@ -11,6 +11,9 @@ import {
 export class CreateClientDto {
   @IsString({ message: 'El tipo de cliente debe ser una cadena de texto.' })
   @IsNotEmpty({ message: 'El tipo de cliente es obligatorio.' })
+  @Matches(/^(PERSONA_NATURAL|EMPRESA)$/, {
+    message: 'El tipo de cliente debe ser PERSONA_NATURAL o EMPRESA.',
+  })
   tipo_cliente: string;
 
   @IsString({ message: 'El nombre debe ser una cadena de texto.' })

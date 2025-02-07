@@ -44,7 +44,7 @@ export class DiagnosticosController {
   }
 
   @Get('/diagnostics/id/:id')
-  @Roles(Rol.ADMIN, Rol.ASISTENTE)
+  @Roles(Rol.ADMIN, Rol.ASISTENTE, Rol.MECANICO)
   findDiagnosticById(@Param('id') id: string) {
     return this.diagnosticosService.findDiagnosticById(id);
   }

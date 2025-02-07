@@ -9,6 +9,7 @@ import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Errors } from 'src/shared/errors.service';
+import { TipoCliente, TipoPersona, Modules} from 'src/constants/constants';
 
 @Injectable()
 export class ClientService {
@@ -17,8 +18,8 @@ export class ClientService {
     private readonly errors: Errors,
   ) {}
 
-  private entity = 'cliente';
-  private tipo_persona = 'CLIENTE';
+  private entity = Modules.cliente;
+  private tipo_persona = TipoPersona.CLIENTE;
 
   async createClient(createClientDto: CreateClientDto) {
     const {
@@ -33,9 +34,9 @@ export class ClientService {
 
     let cdiOrRIF: string;
     const tipoCliente = tipo_cliente.toUpperCase();
-    if (tipoCliente === 'PERSONA_NATURAL') {
+    if (tipoCliente === TipoCliente.PERSONA) {
       cdiOrRIF = 'V-' + cedula_identidad;
-    } else if (tipoCliente === 'EMPRESA') {
+    } else if (tipoCliente === TipoCliente.EMPRESA) {
       cdiOrRIF = 'J-' + cedula_identidad;
     } else {
       throw new HttpException('Tipo de cliente no valido', 400);
@@ -223,23 +224,8 @@ export class ClientService {
     const { nombres, apellidos, cedula_identidad, telefono, direccion, email } =
       updateClientDto;
 
-    const validateObject =
-      nombres ||
-      apellidos ||
-      cedula_identidad ||
-      telefono ||
-      direccion ||
-      email;
-
-    if (!validateObject) {
-      throw new BadRequestException(
-        'Debe proporcionar al menos un campo para actualizar',
-      );
-    }
-
     try {
       const result = await this.prisma.$transaction(async (prisma) => {
-        // Buscar cliente
         const client = await prisma.cliente.findUnique({
           where: { id },
           include: { datos: true },
@@ -249,7 +235,7 @@ export class ClientService {
           throw new NotFoundException('Cliente no encontrado');
         }
 
-        // Validar si la cédula ya está registrada
+        let cedula : string 
         if (cedula_identidad) {
           const existingClient = await prisma.cliente.findFirst({
             where: { datos: { cedula_identidad } },
@@ -258,9 +244,16 @@ export class ClientService {
           if (existingClient) {
             throw new BadRequestException('Esta cédula ya está registrada');
           }
+
+          if(client.tipo_cliente === TipoCliente.PERSONA){
+            cedula = "V-" + cedula_identidad
+          }else if(client.tipo_cliente === TipoCliente.EMPRESA){
+            cedula = "J-" + cedula_identidad
+          }else{
+            throw new BadRequestException('Tipo de cliente no válido');
+          }
         }
 
-        // Actualización del cliente
         const updatedClient = await prisma.cliente.update({
           where: { id },
           data: {
@@ -271,12 +264,8 @@ export class ClientService {
                 telefono,
                 direccion,
                 email,
-                cedula_identidad: cedula_identidad
-                  ? cedula_identidad
-                  : undefined,
-                cedula_id_detalles: cedula_identidad
-                  ? 'V-' + cedula_identidad
-                  : undefined,
+                cedula_identidad,
+                cedula_id_detalles: cedula,
               },
             },
           },

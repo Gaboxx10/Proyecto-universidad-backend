@@ -4,6 +4,7 @@ import { UpdateOrdenesTrabajoDto } from './dto/update-ordenes-trabajo.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { VehicleService } from 'src/vehicle/vehicle.service';
 import { Errors } from 'src/shared/errors.service';
+import { Modules } from 'src/constants/constants';
 
 @Injectable()
 export class OrdenesTrabajoService {
@@ -13,7 +14,7 @@ export class OrdenesTrabajoService {
     private readonly errors: Errors,
   ) {}
 
-  private entity = 'orden-trabajo';
+  private entity = Modules.ordenTrabajo;
 
   async createOrden(createOrdenesTrabajoDto: CreateOrdenesTrabajoDto) {
     const { placa_vehiculo, f_entrega_estimada, nota_adicional, detalles } =

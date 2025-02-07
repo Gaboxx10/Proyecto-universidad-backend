@@ -7,6 +7,7 @@ import { Errors } from 'src/shared/errors.service';
 import { PdfService } from 'src/pdf/pdf.service';
 import { strict } from 'assert';
 import { console } from 'inspector';
+import { Modules } from 'src/constants/constants';
 
 @Injectable()
 export class DiagnosticosService {
@@ -16,7 +17,7 @@ export class DiagnosticosService {
     private errors: Errors,
   ) {}
 
-  private entity = 'diagnostico';
+  private entity = Modules.diagnostico;
 
   async createDiagnostic(createDiagnosticoDto: CreateDiagnosticoDto) {
     const { placa_vehiculo, observaciones } = createDiagnosticoDto;
@@ -148,13 +149,15 @@ export class DiagnosticosService {
   //return `This action updates a #${id} diagnostico`;
   //}
 
-  //buscar por numero o placa
   async searchDiagnostic(search: string, offset: string) {
     const limit = 10;
     const page = parseInt(offset, 10) || 1;
     const skip = (page - 1) * limit;
 
-    const placa_vehiculo = search.toUpperCase();
+    let placa_vehiculo
+    if(search){
+     placa_vehiculo = search.toUpperCase();
+    }
     let num_diagnostico = parseInt(search);
 
     if (isNaN(num_diagnostico)) {
@@ -162,7 +165,7 @@ export class DiagnosticosService {
     }
 
     try {
-      let diagnostic = await this.prisma.diagnostico.findMany({
+      const diagnostic = await this.prisma.diagnostico.findMany({
         where: {
           OR: [
             {
@@ -187,6 +190,7 @@ export class DiagnosticosService {
           num_diagnostico: 'desc',
         }
       });
+      console.log(diagnostic);
 
       if (!diagnostic || diagnostic.length === 0) {
         throw new NotFoundException('No se encontraron diagnosticos');

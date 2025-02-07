@@ -11,6 +11,18 @@ export const defaultData = {
         direccion: "Calle 123",
         tipo_persona: "USUARIO",
     },
+    aux: {
+        nombres: "aux",
+        apellidos: "aux",
+        email: "gabriel@auxiliar.com",
+        user_name: "1010100111",
+        password: "1010100111",
+        role: "ADMIN",
+        cedula_identidad: "1010100011",
+        telefono: "101010102021",
+        direccion: "Calle 123",
+        tipo_persona: "USUARIO",
+    },
     empresa: {
         nombre: "Taller Auto Service",
         direccion: "Calle 123",

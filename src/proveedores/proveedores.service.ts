@@ -3,6 +3,7 @@ import { CreateProveedoreDto } from './dto/create-proveedore.dto';
 import { UpdateProveedoreDto } from './dto/update-proveedore.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Errors } from 'src/shared/errors.service';
+import { Modules } from 'src/constants/constants';
 
 @Injectable()
 export class ProveedoresService {
@@ -11,7 +12,7 @@ export class ProveedoresService {
     private errors: Errors,
   ) {}
 
-  private entity = 'proveedores';
+  private entity = Modules.proveedores;
 
   async createProvider(createProveedoreDto: CreateProveedoreDto) {
     const { nombre, telefono, direccion, rif } = createProveedoreDto;

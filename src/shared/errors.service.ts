@@ -13,6 +13,7 @@ import {
   UnprocessableEntityException,
   GatewayTimeoutException,
 } from '@nestjs/common';
+import { profile } from 'console';
 // Importación de excepciones
 
 @Injectable()
@@ -147,7 +148,7 @@ export class Errors {
       'orden-trabajo': `La orden de trabajo con el campo '${field}' tiene un valor duplicado o conflictivo.`,
       proveedores: this.customizeProveedorFieldError(field),
       empresa: this.customizeEmpresaFieldError(field),
-      factura: this.customizeFacturaFieldError(field),
+      factura: this.customizeFacturaFieldError(field)
     };
 
     return (
@@ -195,8 +196,6 @@ export class Errors {
     const facturaMessages = {
       numero:
         'El número de factura ya está registrado. Por favor, ingresa otro.',
-      fecha_emision:
-        'La fecha de emisión no es válida o ya existe una factura con esta fecha.',
       total: 'El monto total de la factura no puede ser negativo o nulo.',
     };
 
@@ -210,6 +209,8 @@ export class Errors {
     const vehicleMessages = {
       placa:
         'La placa del vehículo ya está registrada. Por favor, ingresa una placa diferente.',
+      cedula_identidad:
+        'La cédula de identidad ya está registrada. Por favor, revisa y prueba con otra.',
     };
 
     return (

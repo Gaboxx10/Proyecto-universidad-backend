@@ -54,5 +54,8 @@ export class CreateVehicleDto {
 
   @IsString({ message: 'El estado debe ser una cadena de texto.' })
   @IsOptional()
+  @Matches(
+    /^(REGISTRADO|EN DIAGNOSTICO|EN REPARACION|EN MANTENIMIENTO|EN ESPERA|REPARADO|NULL|NO REPARABLE|ENTREGADO)$/,
+  )
   estado?: string;
 }

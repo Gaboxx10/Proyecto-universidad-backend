@@ -201,7 +201,7 @@ model Empresa {
   logo         String? @default("")
   moneda       String  @default("Bs")
 
-  iva Decimal @default(0.0)
+  iva Decimal @default(0.16)
 }
 
 model SeedStatus {

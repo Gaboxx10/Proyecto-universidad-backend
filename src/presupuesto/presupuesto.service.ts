@@ -11,6 +11,7 @@ import { VehicleService } from '../vehicle/vehicle.service';
 import { Errors } from '../shared/errors.service';
 import Decimal from 'decimal.js';
 import { formatPresupuestoData } from './utils/format-presupuesto.util';
+import { Modules } from 'src/constants/constants';
 
 @Injectable()
 export class PresupuestoService {
@@ -20,7 +21,7 @@ export class PresupuestoService {
     private readonly errors: Errors,
   ) {}
 
-  private entity = 'presupuesto';
+  private entity = Modules.presupuesto;
 
   async createPresupuesto(createPresupuestoDto: CreatePresupuestoDto) {
     const { placa, detalles } = createPresupuestoDto;
@@ -111,9 +112,9 @@ export class PresupuestoService {
     }
   }
 
-  async findAllPresupuestos(offset: number) {
+  async findAllPresupuestos(offset: string) {
     const limit = 10;
-    const page = offset || 1;
+    const page = parseInt(offset) || 1;
     const skip = (page - 1) * limit;
 
     try {

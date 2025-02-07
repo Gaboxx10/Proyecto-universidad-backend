@@ -9,6 +9,7 @@ import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ClientService } from 'src/client/client.service';
 import { Errors } from 'src/shared/errors.service';
+import { Modules } from 'src/constants/constants';
 
 export enum VehicleStatus {
   REGISTERED = 'Registrado',
@@ -29,7 +30,7 @@ export class VehicleService {
     private readonly errors: Errors,
   ) {}
 
-  private entity = 'vehiculo';
+  private entity = Modules.vehiculo;
 
   async createVehicle(createVehicleDto: CreateVehicleDto) {
     const {
@@ -165,35 +166,7 @@ export class VehicleService {
     }
   }
 
-  async findVehicleByMarca(marca: string) {
-    try {
-      const vehicles = await this.prisma.vehiculo.findMany({
-        where: {
-          marca: {
-            contains: marca,
-          },
-        },
-        orderBy: {
-          created_at: 'desc',
-        },
-      });
-
-      if (vehicles.length === 0) {
-        throw new NotFoundException('Vehiculos no encontrados');
-      }
-
-      return {
-        message: 'Vehiculos encontrados exitosamente',
-        data: vehicles,
-        statusCode: 200,
-      };
-    } catch (error) {
-      const errorData = this.errors.handleError(error, this.entity);
-      return new HttpException(errorData, errorData.status);
-    }
-  }
-
-  async findVehicleBySearch(search: string, offset: string) {
+  async searchVehicle(search: string, offset: string) {
     const limit = 10;
     const page = parseInt(offset) || 1;
     const skip = (page - 1) * limit;
@@ -222,6 +195,13 @@ export class VehicleService {
               },
             },
           ],
+        },
+        include: {
+          cliente: {
+            include: {
+              datos: true,
+            },
+          },
         },
         orderBy: {
           created_at: 'desc',
@@ -258,7 +238,7 @@ export class VehicleService {
       cedula_cliente,
     } = updateVehicleDto;
 
-    let clientId: string | undefined;
+    let clientId: string 
 
     const vehicle = await this.prisma.vehiculo.findUnique({
       where: { id },
@@ -300,7 +280,9 @@ export class VehicleService {
             año,
             kilometraje,
             estado,
-            cliente: clientId ? { connect: { id: clientId } } : undefined,
+            cliente: {
+              connect: { id: clientId },
+            },
           },
         });
       });
